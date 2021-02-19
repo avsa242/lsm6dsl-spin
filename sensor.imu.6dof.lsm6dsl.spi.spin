@@ -1,11 +1,11 @@
 {
     --------------------------------------------
     Filename: sensor.imu.6dof.lsm6dsl.spi.spin
-    Author:
-    Description:
+    Author: Jesse Burt
+    Description: Driver for the ST LSM6DSL 6DoF IMU
     Copyright (c) 2021
     Started Feb 18, 2021
-    Updated Feb 18, 2021
+    Updated Feb 19, 2021
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -21,7 +21,6 @@ OBJ
 ' choose an SPI engine below
     spi : "com.spi.bitbang"                     ' PASM SPI engine (~4MHz)
     core: "core.con.lsm6dsl"                    ' hw-specific low-level const's
-    io  : "io"                                  ' i/o pin convenience methods
     time: "time"                                ' Basic timing functions
 
 PUB Null{}

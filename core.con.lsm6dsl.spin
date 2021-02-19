@@ -1,11 +1,11 @@
 {
     --------------------------------------------
     Filename: core.con.lsm6dsl.spin
-    Author:
-    Description:
+    Author: Jesse Burt
+    Description: Low-level constants
     Copyright (c) 2021
     Started Feb 18, 2021
-    Updated Feb 18, 2021
+    Updated Feb 19, 2021
     See end of file for terms of use.
     --------------------------------------------
 }
