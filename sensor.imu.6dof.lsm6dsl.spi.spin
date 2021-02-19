@@ -15,12 +15,11 @@ CON
 
 VAR
 
-    long _CS
 
 OBJ
 
 ' choose an SPI engine below
-    spi : "com.spi.4w"                          ' PASM SPI engine (~1MHz)
+    spi : "com.spi.bitbang"                     ' PASM SPI engine (~4MHz)
     core: "core.con.lsm6dsl"                    ' hw-specific low-level const's
     io  : "io"                                  ' i/o pin convenience methods
     time: "time"                                ' Basic timing functions
@@ -32,12 +31,8 @@ PUB Startx(CS_PIN, SCK_PIN, MOSI_PIN, MISO_PIN): status
 ' Start using custom IO pins
     if lookdown(CS_PIN: 0..31) and lookdown(SCK_PIN: 0..31) and {
 }   lookdown(MOSI_PIN: 0..31) and lookdown(MISO_PIN: 0..31)
-        if (status := spi.init(SCK_PIN, MOSI_PIN, MISO_PIN, 0))
+        if (status := spi.init(CS_PIN, SCK_PIN, MOSI_PIN, MISO_PIN, 0))
             time.msleep(core#T_POR)             ' wait for device startup
-            _CS := CS_PIN
-            io.high(_CS)
-            io.output(_CS)
-
             if deviceid{} == core#DEVID_RESP    ' validate device
                 return
     ' if this point is reached, something above failed
@@ -67,12 +62,12 @@ PRI readReg(reg_nr, nr_bytes, ptr_buff)
         other:                                  ' invalid reg_nr
             return
 
-    io.low(_CS)
+    spi.deselectafter(false)
     spi.wr_byte(reg_nr)
 
     ' read LSByte to MSByte
+    spi.deselectafter(true)
     spi.rdblock_lsbf(ptr_buff, nr_bytes)
-    io.high(_CS)
 
 PRI writeReg(reg_nr, nr_bytes, ptr_buff)
 ' Write nr_bytes to the device from ptr_buff
@@ -81,12 +76,12 @@ PRI writeReg(reg_nr, nr_bytes, ptr_buff)
         other:
             return
 
-    io.low(_CS)
+    spi.deselectafter(false)
     spi.wr_byte(reg_nr)
 
     ' write LSByte to MSByte
+    spi.deselectafter(true)
     spi.wrblock_lsbf(ptr_buff, nr_bytes)
-    io.high(_CS)
 
 DAT
 {
