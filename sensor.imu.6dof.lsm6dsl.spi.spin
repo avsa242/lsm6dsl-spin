@@ -364,7 +364,50 @@ PUB GyroIntSelect(mode): curr_mode
 ' Set gyroscope interrupt generator selection
 
 PUB GyroLowPassFilter(freq): curr_freq
-' Set gyroscope output data low
+' Set gyroscope output data low-pass filter, in Hz
+'   Valid values dependent on GyroDataRate() setting:
+'       833: 155, 195, 245, 293
+'       1660: 168, 224, 315, 505
+'       3300: 172, 234, 343, 925
+'       6600: 173, 237, 351, 937
+'       When set to other data rates, this setting has no effect
+'   Any other value polls the chip and returns the current setting
+    curr_freq := 0
+    readreg(core#CTRL6_C, 1, @curr_freq)
+    case gyrodatarate(-2)
+        833:
+            case freq
+                155, 195, 245, 293:
+                    freq := lookdownz(freq: 245, 195, 155, 293)
+                other:
+                    curr_freq := (curr_freq & core#FTYPE_BITS)
+                    return lookupz(curr_freq: 245, 195, 155, 293)
+        1660:
+            case freq
+                168, 224, 315, 505:
+                    freq := lookdownz(freq: 315, 224, 168, 505)
+                other:
+                    curr_freq := (curr_freq & core#FTYPE_BITS)
+                    return lookupz(curr_freq: 315, 224, 168, 505)
+        3330:
+            case freq
+                172, 234, 343, 925:
+                    freq := lookdownz(freq: 343, 234, 172, 925)
+                other:
+                    curr_freq := (curr_freq & core#FTYPE_BITS)
+                    return lookupz(curr_freq: 343, 234, 172, 925)
+        6660:
+            case freq
+                173, 237, 351, 937:
+                    freq := lookdownz(freq: 351, 237, 173, 937)
+                other:
+                    curr_freq := (curr_freq & core#FTYPE_BITS)
+                    return lookupz(curr_freq: 351, 237, 173, 937)
+        other:
+            return
+
+    freq := ((curr_freq & core#FTYPE_MASK) | freq)
+    writereg(core#CTRL6_C, 1, @freq)
 
 PUB GyroLowPower(state): curr_state
 ' Enable low

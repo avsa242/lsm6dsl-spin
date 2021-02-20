@@ -89,7 +89,23 @@ CON
         LPF1_SEL_G_MASK = (1 << LPF1_SEL_G) ^ CTRL4_C_MASK
 
     CTRL5_C             = $14
+
     CTRL6_C             = $15
+    CTRL6_C_MASK        = $FB
+        TRIG_EN         = 7
+        LVL_EN          = 6
+        LVL2_EN         = 5
+        XL_HM_MODE      = 4
+        USR_OFF_W       = 3
+        FTYPE           = 0
+        FTYPE_BITS      = %11
+        TRIG_EN_MASK    = (1 << TRIG_EN) ^ CTRL6_C_MASK
+        LVL_EN_MASK     = (1 << LVL_EN) ^ CTRL6_C_MASK
+        LVL2_EN_MASK    = (1 << LVL2_EN) ^ CTRL6_C_MASK
+        XL_HM_MODE_MASK = (1 << XL_HM_MODE) ^ CTRL6_C_MASK
+        USR_OFF_W_MASK  = (1 << USR_OFF_W) ^ CTRL6_C_MASK
+        FTYPE_MASK      = FTYPE_BITS ^ CTRL6_C_MASK
+
     CTRL7_G             = $16
     CTRL8_XL            = $17
     CTRL9_XL            = $18
