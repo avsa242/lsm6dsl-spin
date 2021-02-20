@@ -15,6 +15,7 @@ This is a P8X32A/Propeller, P2X8C4M64P/Propeller 2 driver object for the ST LSM6
 * Set accel/gyro bias offsets (accel: on-chip, gyro: in MCU RAM)
 * Soft-reset
 * Gyroscope sleep mode
+* Set gyroscope low-pass filter
 
 ## Requirements
 
