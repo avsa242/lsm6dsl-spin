@@ -41,6 +41,7 @@ CON
 VAR
 
     long _ares, _gres
+    long _gbiasraw[GYRO_DOF]
 
 OBJ
 
@@ -89,8 +90,39 @@ PUB AccelADCRes(adc_res): curr_res
 PUB AccelAxisEnabled(xyz_mask): curr_mask
 ' dummy method
 
-PUB AccelBias(bias_x, bias_y, bias_z, rw) | tmp, opmode_orig
-' Read or write/manually set accelerometer calibration offset values
+PUB AccelBias(bias_x, bias_y, bias_z, rw) | tmp
+' Read or write/manually set accelerometer calibration offset values (on-chip)
+'   Valid values: (bias_x, bias_y, bias_z)
+'       When rw == R (0): pointers to variables containing offsets
+'       When rw == W (1): -127..127
+'   Any other value for rw or bias_ parameters is ignored
+    case rw
+        R:
+            tmp := 0
+            readreg(core#X_OFS_USR, 3, @tmp)
+            ' extend sign and copy to pointees
+            long[bias_x] := ~tmp.byte[X_AXIS]
+            long[bias_y] := ~tmp.byte[Y_AXIS]
+            long[bias_z] := ~tmp.byte[Z_AXIS]
+            return
+        W:
+            case bias_x
+                -127..127:
+                    writereg(core#X_OFS_USR, 1, @bias_x)
+                other:
+                    return
+            case bias_y
+                -127..127:
+                    writereg(core#Y_OFS_USR, 1, @bias_y)
+                other:
+                    return
+            case bias_z
+                -127..127:
+                    writereg(core#Z_OFS_USR, 1, @bias_z)
+                other:
+                    return
+        other:
+            return
 
 PUB AccelClearInt{}
 ' Clear Accelerometer interrupts
@@ -235,8 +267,32 @@ PUB FIFOUnreadSamples{}: nr_samples
 PUB GyroAxisEnabled(mask): curr_mask
 ' Enable data output for gyroscope (all axes)
 
-PUB GyroBias(ptr_x, ptr_y, ptr_z, rw) | tmp[GYRO_DOF]
+PUB GyroBias(bias_x, bias_y, bias_z, rw)
 ' Read or write/manually set gyroscope calibration offset values
+'   Valid values: (bias_x, bias_y, bias_z)
+'       When rw == R (0): pointers to variables containing offsets
+'       When rw == W (1): -32768..32767
+'   Any other value for rw or bias_ parameters is ignored
+    case rw
+        R:
+            longmove(bias_x, @_gbiasraw, GYRO_DOF)
+            return
+        W:
+            case bias_x
+                -32768..32767:
+                other:
+                    return
+            case bias_y
+                -32768..32767:
+                other:
+                    return
+            case bias_z
+                -32768..32767:
+                other:
+                    return
+            longmove(@_gbiasraw, bias_x, GYRO_DOF)
+        other:
+            return
 
 PUB GyroClearInt{}
 ' Clears out any interrupts set up on the Gyroscope and resets all Gyroscope interrupt registers to their default values.
@@ -244,9 +300,9 @@ PUB GyroClearInt{}
 PUB GyroData(ptr_x, ptr_y, ptr_z) | tmp[2]
 ' Reads the Gyroscope output registers
     readreg(core#OUTX_L_G, 6, @tmp)
-    long[ptr_x] := ~~tmp.word[X_AXIS]
-    long[ptr_y] := ~~tmp.word[Y_AXIS]
-    long[ptr_z] := ~~tmp.word[Z_AXIS]
+    long[ptr_x] := ~~tmp.word[X_AXIS] + _gbiasraw[X_AXIS]
+    long[ptr_y] := ~~tmp.word[Y_AXIS] + _gbiasraw[Y_AXIS]
+    long[ptr_z] := ~~tmp.word[Z_AXIS] + _gbiasraw[Z_AXIS]
 
 PUB GyroDataOverrun{}: flag
 ' Dummy method

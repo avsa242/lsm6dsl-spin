@@ -148,6 +148,7 @@ CON
     OUT_MAG_RAW_Y_H     = $69
     OUT_MAG_RAW_Z_L     = $6A
     OUT_MAG_RAW_Z_H     = $6B
+
     X_OFS_USR           = $73
     Y_OFS_USR           = $74
     Z_OFS_USR           = $75

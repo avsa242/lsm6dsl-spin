@@ -12,6 +12,7 @@ This is a P8X32A/Propeller, P2X8C4M64P/Propeller 2 driver object for the ST LSM6
 * Read accelerometer raw data, or scaled to micro-G's
 * Read gyroscope raw data, or scaled to micro-dps
 * Data ready flags
+* Set accel/gyro bias offsets (accel: on-chip, gyro: in MCU RAM)
 
 ## Requirements
 
