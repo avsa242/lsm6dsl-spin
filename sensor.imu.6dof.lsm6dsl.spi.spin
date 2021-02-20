@@ -12,6 +12,31 @@
 
 CON
 
+' Indicate to user apps how many Degrees of Freedom each sub-sensor has
+'   (also imply whether or not it has a particular sensor)
+    ACCEL_DOF               = 3
+    GYRO_DOF                = 3
+    MAG_DOF                 = 0
+    BARO_DOF                = 0
+    DOF                     = ACCEL_DOF + GYRO_DOF + MAG_DOF + BARO_DOF
+
+' Constants used in low-level SPI read/write
+    READ                    = 1 << 7
+    WRITE                   = 0
+
+' Bias adjustment (AccelBias(), GyroBias(), MagBias()) read or write
+    R                       = 0
+    W                       = 1
+
+' Axis-specific constants
+    X_AXIS                  = 0
+    Y_AXIS                  = 1
+    Z_AXIS                  = 2
+    ALL_AXIS                = 3
+
+' Temperature scale constants
+    C                       = 0
+    F                       = 1
 
 VAR
 
@@ -31,7 +56,7 @@ PUB Startx(CS_PIN, SCK_PIN, MOSI_PIN, MISO_PIN): status
     if lookdown(CS_PIN: 0..31) and lookdown(SCK_PIN: 0..31) and {
 }   lookdown(MOSI_PIN: 0..31) and lookdown(MISO_PIN: 0..31)
         if (status := spi.init(CS_PIN, SCK_PIN, MOSI_PIN, MISO_PIN, 0))
-            time.msleep(core#T_POR)             ' wait for device startup
+            time.usleep(core#T_POR)             ' wait for device startup
             if deviceid{} == core#DEVID_RESP    ' validate device
                 return
     ' if this point is reached, something above failed
@@ -46,23 +71,363 @@ PUB Stop{}
 PUB Defaults{}
 ' Set factory defaults
 
+PUB PresetIMUActive{}
+
+PUB AccelADCRes(adc_res): curr_res
+' dummy method
+
+PUB AccelAxisEnabled(xyz_mask): curr_mask
+' dummy method
+
+PUB AccelBias(bias_x, bias_y, bias_z, rw) | tmp, opmode_orig
+' Read or write/manually set accelerometer calibration offset values
+
+PUB AccelClearInt{}
+' Clear Accelerometer interrupts
+
+PUB AccelData(ptr_x, ptr_y, ptr_z) | tmp[2]
+' Read the Accelerometer output registers
+    readreg(core#OUTX_L_XL, 6, @tmp)
+    long[ptr_x] := ~~tmp.word[X_AXIS]
+    long[ptr_y] := ~~tmp.word[Y_AXIS]
+    long[ptr_z] := ~~tmp.word[Z_AXIS]
+
+PUB AccelDataOverrun{}: flag
+' Flag indicating previously acquired data has been overwritten
+
+PUB AccelDataRate(rate): curr_rate
+' Set accelerometer output data rate, in Hz
+    readreg(core#CTRL1_XL, 1, @curr_rate)
+    case rate
+        0, 1, 12, 26, 52, 104, 208, 416, 833, 1660, 3330, 6660:
+            rate := lookdownz(rate: 0, 12, 26, 52, 104, 208, 416, 833, 1660, {
+}           3330, 6660, 1) << core#ODR_XL
+        other:
+            curr_rate >>= core#ODR_XL
+            return lookupz(curr_rate: 0, 12, 26, 52, 104, 208, 416, 833, 1660,{
+}           3330, 6660, 1)
+
+    rate := ((curr_rate & core#ODR_XL_MASK) | rate)
+    writereg(core#CTRL1_XL, 1, @rate)
+
+PUB AccelDataReady{}: flag
+' Flag indicating new accelerometer data available
+
+PUB AccelG(ptr_x, ptr_y, ptr_z) | tmpx, tmpy, tmpz
+' Reads the Accelerometer output registers and scales the outputs to micro
+
+PUB AccelInt{}: flag
+' Flag indicating accelerometer interrupt asserted
+
+PUB AccelLowPassFilter(freq): curr_freq
+' Enable accelerometer data low-pass filter
+
+PUB AccelOpMode(mode): curr_mode
+' Set accelerometer operating mode
+
+PUB AccelScale(scale): curr_scl
+' Set the full-scale range of the accelerometer, in g's
+    readreg(core#CTRL1_XL, 1, @curr_scl)
+    case scale
+        2, 4, 8, 16:
+            scale := lookdownz(scale: 2, 16, 4, 8) << core#FS_XL
+        other:
+            curr_scl := ((curr_scl >> core#FS_XL) & core#FS_XL_BITS)
+            return lookupz(curr_scl: 2, 16, 4, 8)
+    scale := ((curr_scl & core#FS_XL_MASK) | scale)
+    writereg(core#CTRL1_XL, 1, @scale)
+
+PUB CalibrateAccel{} | acceltmp[ACCEL_DOF], axis, x, y, z, samples, scale_orig, drate_orig, fifo_orig, scl
+' Calibrate the accelerometer
+
+PUB CalibrateGyro{} | gyrotmp[GYRO_DOF], axis, x, y, z, samples, scale_orig, drate_orig, fifo_orig, scl
+' Calibrate the accelerometer
+
+PUB CalibrateMag{} | magtmp[MAG_DOF], axis, x, y, z, samples, scale_orig, drate_orig, fifo_orig, scl
+' Calibrate the magnetometer
+
+PUB CalibrateXLG{}
+' Dummy method
+
+PUB ClickAxisEnabled(mask): curr_mask
+' Enable click detection per axis, and per click type
+
+PUB Clicked{}: flag
+' Flag indicating the sensor was single or double
+
+PUB ClickedInt{}: intstat
+' Clicked interrupt status
+
+PUB ClickIntEnabled(state): curr_state
+' Enable click interrupts on INT1
+
+PUB ClickLatency(clat): curr_clat
+' Set maximum elapsed interval between start of click and end of click, in uSec
+
+PUB ClickThresh(level): curr_lvl
+' Set threshold for recognizing a click, in micro
+
+PUB ClickTime(usec): curr_ctime
+' Set maximum elapsed interval between start of click and end of click, in uSec
+
+PUB ClockSource(src): curr_src
+' Set sensor clock source
+
 PUB DeviceID{}: id
 ' Read device identification
     readreg(core#WHO_AM_I, 1, @id)
 
+PUB DoubleClickWindow(dctime): curr_dctime
+' Set maximum elapsed interval between two consecutive clicks, in uSec
+
+PUB FIFOEmpty{}: flag
+' Flag indicating FIFO is empty
+
+PUB FIFOEnabled(state): curr_state
+' Enable FIFO memory
+
+PUB FIFOFull{}: flag
+' Flag indicating FIFO full/overflowed
+
+PUB FIFOMode(mode): curr_mode
+' Set FIFO mode
+
+PUB FIFORead(nr_bytes, ptr_data)
+' Read FIFO data
+
+PUB FIFOReset{}
+' Reset the FIFO
+
+PUB FIFOSource(mask): curr_mask
+' Set FIFO source data, as a bitmask
+
+PUB FIFOThresh(level): curr_lvl
+' Set FIFO watermark/threshold level
+
+PUB FIFOUnreadSamples{}: nr_samples
+' Number of unread samples stored in FIFO
+
+PUB GyroAxisEnabled(mask): curr_mask
+' Enable data output for gyroscope (all axes)
+
+PUB GyroBias(ptr_x, ptr_y, ptr_z, rw) | tmp[GYRO_DOF]
+' Read or write/manually set gyroscope calibration offset values
+
+PUB GyroClearInt{}
+' Clears out any interrupts set up on the Gyroscope and resets all Gyroscope interrupt registers to their default values.
+
+PUB GyroData(ptr_x, ptr_y, ptr_z) | tmp[2]
+' Reads the Gyroscope output registers
+
+PUB GyroDataOverrun{}: flag
+' Dummy method
+
+PUB GyroDataRate(rate): curr_rate
+' Set gyroscope output data rate, in Hz
+
+PUB GyroDataReady{}: flag
+' Flag indicating new gyroscope data available
+
+PUB GyroDPS(ptr_x, ptr_y, ptr_z) | tmp[GYRO_DOF]
+' Read the Gyroscope output registers and scale the outputs to micro
+
+PUB GyroHighPass(freq): curr_freq
+' Set Gyroscope high
+
+PUB GyroInactiveDur(duration): curr_dur
+' Set gyroscope inactivity timer (use GyroInactiveSleep to define behavior on inactivity)
+
+PUB GyroInactiveThr(thresh): curr_thr
+' Set gyroscope inactivity threshold (use GyroInactiveSleep to define behavior on inactivity)
+
+PUB GyroInactiveSleep(state): curr_state
+' Enable gyroscope sleep mode when inactive (see GyroActivityThr)
+
+PUB GyroInt{}: flag
+' Flag indicating gyroscope interrupt asserted
+
+PUB GyroIntSelect(mode): curr_mode
+' Set gyroscope interrupt generator selection
+
+PUB GyroLowPassFilter(freq): curr_freq
+' Set gyroscope output data low
+
+PUB GyroLowPower(state): curr_state
+' Enable low
+
+PUB GyroScale(scale): curr_scl
+' Set gyroscope full
+
+PUB IntActiveState(state): curr_state
+' Set interrupt pin active state/logic level
+
+PUB IntClear(mask)
+' Clear interrupts, per clear_mask
+
+PUB IntClearedBy(mode): curr_mode
+' Select method by which interrupt status may be cleared
+
+PUB Interrupt{}: src
+' Indicate interrupt state
+
+PUB IntInactivity{}: flag
+' Flag indicating inactivity interrupt asserted
+
+PUB IntLatchEnabled(state): curr_state
+' Latch interrupt pin when interrupt asserted
+
+PUB IntMask(mask): curr_mask
+' Set interrupt mask
+
+PUB IntOutputType(mode): curr_mode
+' Set interrupt pin output type
+
+PUB IntThresh(thresh): curr_thr
+' Set interrupt threshold
+
+PUB MagADCRes(adc_res): curr_res
+' Set magnetometer ADC resolution, in bits
+
+PUB MagBias(bias_x, bias_y, bias_z, rw) | tmp[2]
+' Read or write/manually set magnetometer calibration offset values
+
+PUB MagClearInt{}
+' Clear out any interrupts set up on the Magnetometer and
+
+PUB MagData(ptr_x, ptr_y, ptr_z) | tmp[2]
+' Read the Magnetometer output registers
+
+PUB MagDataOverSampling(ratio): curr_osr
+' Set oversampling ratio for magnetometer output data
+
+PUB MagDataOverrun{}: flag
+' Flag indicating magnetometer data has overrun
+
+PUB MagDataRate(rate): curr_rate
+' Set Magnetometer Output Data Rate, in Hz
+
+PUB MagDataReady{}: flag
+' Flag indicating new magnetometer data available
+
+PUB MagFastRead(state): curr_state
+' Enable reading of only the MSB of data to increase reading efficiency, at the cost of precision and accuracy
+
+PUB MagGauss(ptr_x, ptr_y, ptr_z) | tmp[MAG_DOF]
+' Magnetometer data scaled to micro
+
+PUB MagInt{}: src
+' Magnetometer interrupt source(s)
+
+PUB MagIntLevel(state): curr_state
+' Set active state of INT_MAG pin when magnetometer interrupt asserted
+
+PUB MagIntsEnabled(state): curr_state
+' Enable magnetometer data threshold interrupt
+
+PUB MagIntsLatched(state): curr_state
+' Latch interrupts asserted by the magnetometer
+
+PUB MagIntThresh(level): curr_thr
+' Set magnetometer interrupt threshold
+
+PUB MagIntThreshX(thresh): curr_thr
+' Set magnetometer interrupt threshold, X
+
+PUB MagIntThreshY(thresh): curr_thr
+' Set magnetometer interrupt threshold, Y
+
+PUB MagIntThreshZ(thresh): curr_thr
+' Set magnetometer interrupt threshold, Z
+
+PUB MagLowPower(state): curr_state
+' Enable magnetometer low
+
+PUB MagOpMode(mode): curr_mode
+' Set magnetometer operating mode
+
+PUB MagOverflow{}: flag
+' Flag indicating magnetometer measurement has overflowed the set range
+
+PUB MagPerf(mode): curr_mode
+' Set magnetometer performance mode
+
+PUB MagScale(scale): curr_scl
+' Set magnetometer full-scale range, in Gauss
+
+PUB MagSelfTest(state): curr_state
+' Enable magnetometer on-chip self-test
+
+PUB MagSoftreset{}
+' Perform soft-reset
+
+PUB MagTesla(ptr_x, ptr_y, ptr_z) | tmp[2]
+' Magnetometer data scaled to micro-Teslas
+
+PUB MagThreshDebounce(nr_samples)
+' Set number of debounce samples required before magnetometer threshold
+
+PUB MagThreshInt{}
+' Magnetometer threshold
+
+PUB MagThreshIntMask(mask): curr_mask
+' Set magnetometer threshold interrupt mask
+
+PUB MagThreshIntsEnabled(state)
+' Enable magnetometer threshold interrupts
+
+PUB MeasureMag{}
+' Perform magnetometer measurement
+
+PUB OpMode(mode): curr_mode
+' Set operating mode
+
+PUB Powered(state): curr_state
+' Enable device power
+
+PUB ReadMagAdj{}
+' Read magnetometer factory sensitivity adjustment values
+
 PUB Reset{}
 ' Reset the device
+
+PUB Temperature{}: temp
+' Read chip temperature
+
+PUB TempDataRate(rate): curr_rate
+' Set temperature output data rate, in Hz
+
+PUB TempDataReady{}: flag
+' Flag indicating new temperature sensor data available
+
+PUB TempScale(scale): curr_scl
+' Set temperature scale used by Temperature method
+
+PUB XLGDataReady{}: flag
+' Flag indicating new gyroscope/accelerometer data is ready to be read
+
+PUB TempOffset(offs): curr_offs
+' Set room temperature offset for Temperature{}
+
+PUB XLGDataRate(rate): curr_rate
+' Set output data rate, in Hz, of accelerometer and gyroscope
+
+PUB XLGSoftReset{}
+' Perform soft-reset
 
 PRI readReg(reg_nr, nr_bytes, ptr_buff)
 ' Read nr_bytes from the device into ptr_buff
     case reg_nr                                 ' validate register num
-        $0f:
-            reg_nr |= core#READ
+        core#OUT_TEMP_L..core#OUTZ_H_XL, core#OUT_MAG_RAW_X_L:
+
+        core#FUNC_CFG_ACCESS, core#SENS_SYNC_TIMEFR..core#DRDY_PULSE_CFG_G, {
+}       core#INT1_CTRL..core#STATUS, core#SENSHUB1..core#TIMESTAMP2, {
+}       core#STP_TIMESTMP_L..core#WRIST_TILT_IA, {
+}       core#TAP_CFG..core#SENS_SYNC_SPI_ERR, core#X_OFS_USR..core#Z_OFS_USR:
         other:                                  ' invalid reg_nr
             return
 
     spi.deselectafter(false)
-    spi.wr_byte(reg_nr)
+    spi.wr_byte(reg_nr | core#READ)
 
     ' read LSByte to MSByte
     spi.deselectafter(true)
@@ -71,7 +436,10 @@ PRI readReg(reg_nr, nr_bytes, ptr_buff)
 PRI writeReg(reg_nr, nr_bytes, ptr_buff)
 ' Write nr_bytes to the device from ptr_buff
     case reg_nr
-        $01:
+        core#FUNC_CFG_ACCESS, core#SENS_SYNC_TIMEFR..core#DRDY_PULSE_CFG_G, {
+}       core#INT1_CTRL, core#INT2_CTRL, core#CTRL1_XL..core#MASTER_CFG, {
+}       core#TIMESTAMP2, core#TAP_CFG..core#SENS_SYNC_SPI_ERR, {
+}       core#X_OFS_USR..core#Z_OFS_USR:
         other:
             return
 

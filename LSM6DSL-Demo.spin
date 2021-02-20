@@ -32,11 +32,16 @@ OBJ
     time: "time"
     imu : "sensor.imu.6dof.lsm6dsl.spi"
 
-PUB Main{}
+PUB Main{} | x, y, z
 
     setup{}
-    ser.hex(imu.deviceid{}, 8)
+    imu.accelscale(2)
+    imu.acceldatarate(52)
+    x := y := z := 0
     repeat
+        ser.position(0, 3)
+        imu.acceldata(@x, @y, @z)
+        ser.printf3(string("%x %x %x"), x, y, z)
 
 PUB Setup{}
 
