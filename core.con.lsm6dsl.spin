@@ -5,7 +5,7 @@
     Description: Low-level constants
     Copyright (c) 2021
     Started Feb 18, 2021
-    Updated Feb 19, 2021
+    Updated Feb 20, 2021
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -49,6 +49,16 @@ CON
         BW0_XL_MASK     = 1 ^ CTRL1_XL_MASK
 
     CTRL2_G             = $11
+    CTRL2_G_MASK        = $FE
+        ODR_G           = 4
+        FS_G            = 1                     ' FS_125 combined w/FS_G
+        FS125_G         = 1
+        ODR_G_BITS      = %1111
+        FS_G_BITS       = %111
+        ODR_G_MASK      = (ODR_G_BITS << ODR_G) ^ CTRL2_G_MASK
+        FS_G_MASK       = (FS_G_BITS << FS_G) ^ CTRL2_G_MASK
+        FS125_G_MASK    = (1 << FS125_G) ^ CTRL2_G_MASK
+
     CTRL3_C             = $12
     CTRL4_C             = $13
     CTRL5_C             = $14

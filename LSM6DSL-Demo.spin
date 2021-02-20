@@ -37,6 +37,8 @@ PUB Main{} | x, y, z
     setup{}
     imu.accelscale(2)
     imu.acceldatarate(52)
+    imu.gyroscale(125)
+    ser.dec(imu.gyroscale(-2))
     x := y := z := 0
     repeat
         ser.position(0, 3)

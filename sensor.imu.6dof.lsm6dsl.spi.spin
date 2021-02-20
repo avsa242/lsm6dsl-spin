@@ -71,7 +71,7 @@ PUB Stop{}
 
 PUB Defaults{}
 ' Set factory defaults
-    accelscale(2)
+    reset{}
 
 PUB PresetIMUActive{}
 ' Like Defaults(), but sets:
@@ -79,6 +79,7 @@ PUB PresetIMUActive{}
 '   * Accelerometer data rate: 52Hz
     acceldatarate(52)
     accelscale(2)
+    gyroscale(250)
 
 PUB AccelADCRes(adc_res): curr_res
 ' dummy method
@@ -275,7 +276,24 @@ PUB GyroLowPower(state): curr_state
 ' Enable low
 
 PUB GyroScale(scale): curr_scl
-' Set gyroscope full
+' Set gyroscope full-scale range, in degrees per second
+'   Valid values: 125, 250, 500, 1000, 2000
+'   Any other value polls the chip and returns the current setting
+    curr_scl := 0
+    readreg(core#CTRL2_G, 1, @curr_scl)
+    case scale
+        125, 250, 500, 1000, 2000:
+            ' 125dps scale is a separate reg field from the other scales,
+            ' but treat it as combined, for simplicity
+            scale := lookdownz(scale: 250, 125, 500, 0, 1000, 0, 2000)
+            _gres := lookupz(scale: 8_75, 4_375, 17_50, 0, 35_00, 0, 70_00)
+            scale <<= core#FS_G
+        other:
+            curr_scl := (curr_scl >> core#FS_G) & core#FS_G_BITS
+            return lookupz(curr_scl: 250, 125, 500, 0, 1000, 0, 2000)
+
+    scale := ((curr_scl & core#FS_G_MASK) | scale)
+    writereg(core#CTRL2_G, 1, @scale)
 
 PUB IntActiveState(state): curr_state
 ' Set interrupt pin active state/logic level
