@@ -71,7 +71,16 @@ CON
     WAKEUP_SRC          = $1B
     TAP_SRC             = $1C
     D6D_SRC             = $1D
+
     STATUS              = $1E
+    STATUS_MASK         = $07
+        TDA             = 2
+        GDA             = 1
+        XLDA            = 0
+        TRDY            = (1 << TDA)
+        GRDY            = (1 << GDA)
+        XLRDY           = (1 << XLDA)
+
     OUT_TEMP_L          = $20
     OUT_TEMP_H          = $21
 

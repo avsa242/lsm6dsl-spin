@@ -53,7 +53,7 @@ PUB Main{}
 
 PUB AccelCalc{} | ax, ay, az
 
-'    repeat until imu.acceldataready{}           ' wait for new sensor data set
+    repeat until imu.acceldataready{}           ' wait for new sensor data set
     imu.accelg(@ax, @ay, @az)                   ' read calculated sensor data
     ser.str(string("Accel (g):"))
     ser.positionx(DAT_X_COL)
@@ -67,7 +67,7 @@ PUB AccelCalc{} | ax, ay, az
 
 PUB GyroCalc{} | gx, gy, gz
 
-'    repeat until imu.gyrodataready{}
+    repeat until imu.gyrodataready{}
     imu.gyrodps(@gx, @gy, @gz)
     ser.str(string("Gyro (dps):"))
     ser.positionx(DAT_X_COL)

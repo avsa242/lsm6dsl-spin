@@ -127,6 +127,9 @@ PUB AccelDataRate(rate): curr_rate
 
 PUB AccelDataReady{}: flag
 ' Flag indicating new accelerometer data available
+'   Returns: TRUE (-1) if new data available, FALSE (0) otherwise
+    readreg(core#STATUS, 1, @flag)
+    return ((flag & core#XLRDY) == core#XLRDY)
 
 PUB AccelG(ptr_x, ptr_y, ptr_z) | tmp[ACCEL_DOF]
 ' Read the Accelerometer data and scale the outputs to
@@ -271,6 +274,9 @@ PUB GyroDataRate(rate): curr_rate
 
 PUB GyroDataReady{}: flag
 ' Flag indicating new gyroscope data available
+'   Returns: TRUE (-1) if new data available, FALSE (0) otherwise
+    readreg(core#STATUS, 1, @flag)
+    return ((flag & core#GRDY) == core#GRDY)
 
 PUB GyroDPS(ptr_x, ptr_y, ptr_z) | tmp[GYRO_DOF]
 ' Read the Gyroscope output registers and scale the outputs to micro
