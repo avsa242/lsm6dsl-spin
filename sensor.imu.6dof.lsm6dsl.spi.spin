@@ -38,9 +38,13 @@ CON
     C                       = 0
     F                       = 1
 
-' Gyroscope operating mode
+' Gyroscope operating modes
     NORM                    = 0
     SLEEP                   = 1
+
+' Accelerometer operating modes
+    XL_HIPERF               = 0
+    XL_NORM                 = 1
 
 VAR
 
@@ -145,8 +149,8 @@ PUB AccelDataRate(rate): curr_rate
 ' Set accelerometer output data rate, in Hz
 '   Valid values:
 '       Low power mode: 0, 1 (1.6), 12 (12.5), 26, 52
-'       Normal mode: 104, 208
-'       High-perf mode: 416, 833, 1660, 3330, 6660
+'       Normal mode: 0, 104, 208
+'       High-perf mode: *0, 12, 26, 52, 104, 208, 416, 833, 1660, 3330, 6660
 '   Any other value polls the chip and returns the current setting
     readreg(core#CTRL1_XL, 1, @curr_rate)
     case rate
@@ -183,9 +187,25 @@ PUB AccelLowPassFilter(freq): curr_freq
 
 PUB AccelOpMode(mode): curr_mode
 ' Set accelerometer operating mode
+'   Valid values:
+'      *XL_HIPERF (0): High-performance mode
+'       XL_NORM (1): Normal mode
+'   Any other value polls the chip and returns the current setting
+    curr_mode := 0
+    readreg(core#CTRL6_C, 1, @curr_mode)
+    case mode
+        XL_NORM, XL_HIPERF:
+            mode <<= core#XL_HM_MODE
+        other:
+            curr_mode := (curr_mode >> core#XL_HM_MODE) & 1
+
+    mode := ((curr_mode & core#XL_HM_MODE_MASK) | mode)
+    writereg(core#CTRL6_C, 1, @mode)
 
 PUB AccelScale(scale): curr_scl
 ' Set the full-scale range of the accelerometer, in g's
+'   Valid values: *2, 4, 8, 16
+'   Any other value polls the chip and returns the current setting
     readreg(core#CTRL1_XL, 1, @curr_scl)
     case scale
         2, 4, 8, 16:
@@ -315,8 +335,8 @@ PUB GyroDataRate(rate): curr_rate
 ' Set gyroscope output data rate, in Hz
 '   Valid values:
 '       Low power mode: 0, 12 (12.5), 26, 52
-'       Normal: 104, 208
-'       High-perf mode: 416, 833, 1660, 3330, 6660
+'       Normal: 0, 104, 208
+'       High-perf mode: *0, 12, 26, 52, 104, 208, 416, 833, 1660, 3330, 6660
 '   Any other value polls the chip and returns the current setting
     curr_rate := 0
     readreg(core#CTRL2_G, 1, @curr_rate)
@@ -366,10 +386,10 @@ PUB GyroIntSelect(mode): curr_mode
 PUB GyroLowPassFilter(freq): curr_freq
 ' Set gyroscope output data low-pass filter, in Hz
 '   Valid values dependent on GyroDataRate() setting:
-'       833: 155, 195, 245, 293
-'       1660: 168, 224, 315, 505
-'       3300: 172, 234, 343, 925
-'       6600: 173, 237, 351, 937
+'       833: 155, 195, *245, 293
+'       1660: 168, 224, *315, 505
+'       3300: 172, 234, *343, 925
+'       6600: 173, 237, *351, 937
 '       When set to other data rates, this setting has no effect
 '   Any other value polls the chip and returns the current setting
     curr_freq := 0
@@ -415,7 +435,7 @@ PUB GyroLowPower(state): curr_state
 PUB GyroOpMode(mode): curr_mode
 ' Set gyroscope operating mode
 '   Valid values:
-'       NORM (0): Normal operation
+'      *NORM (0): Normal operation
 '       SLEEP (1): Sleep/low-power operation
 '   Any other value polls the chip and returns the current setting
     curr_mode := 0
@@ -431,7 +451,7 @@ PUB GyroOpMode(mode): curr_mode
 
 PUB GyroScale(scale): curr_scl
 ' Set gyroscope full-scale range, in degrees per second
-'   Valid values: 125, 250, 500, 1000, 2000
+'   Valid values: 125, *250, 500, 1000, 2000
 '   Any other value polls the chip and returns the current setting
     curr_scl := 0
     readreg(core#CTRL2_G, 1, @curr_scl)
