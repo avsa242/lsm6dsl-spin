@@ -514,8 +514,10 @@ PUB Powered(state): curr_state
 PUB ReadMagAdj{}
 ' Read magnetometer factory sensitivity adjustment values
 
-PUB Reset{}
+PUB Reset{} | tmp
 ' Reset the device
+    tmp := core#RESET
+    writereg(core#CTRL3_C, 1, @tmp)
 
 PUB Temperature{}: temp
 ' Read chip temperature

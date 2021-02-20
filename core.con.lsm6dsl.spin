@@ -60,6 +60,17 @@ CON
         FS125_G_MASK    = (1 << FS125_G) ^ CTRL2_G_MASK
 
     CTRL3_C             = $12
+    CTRL3_C_MASK        = $FF
+        BOOT            = 7
+        BDU             = 6
+        H_LACTIVE       = 5
+        PP_OD           = 4
+        SIM             = 3
+        IF_INC          = 2
+        BLE             = 1
+        SW_RESET        = 0
+        RESET           = (1 << SW_RESET)
+
     CTRL4_C             = $13
     CTRL5_C             = $14
     CTRL6_C             = $15
