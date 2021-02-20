@@ -73,12 +73,14 @@ PUB Defaults{}
 ' Set factory defaults
     reset{}
 
-PUB PresetIMUActive{}
+PUB Preset_IMUActive{}
 ' Like Defaults(), but sets:
 '   * Sensor powered up/actively measuring
-'   * Accelerometer data rate: 52Hz
+'   * Accelerometer: 2g, 52Hz
+'   * Gyroscope: 250dps, 52Hz
     acceldatarate(52)
     accelscale(2)
+    gyrodatarate(52)
     gyroscale(250)
 
 PUB AccelADCRes(adc_res): curr_res
@@ -238,18 +240,44 @@ PUB GyroClearInt{}
 
 PUB GyroData(ptr_x, ptr_y, ptr_z) | tmp[2]
 ' Reads the Gyroscope output registers
+    readreg(core#OUTX_L_G, 6, @tmp)
+    long[ptr_x] := ~~tmp.word[X_AXIS]
+    long[ptr_y] := ~~tmp.word[Y_AXIS]
+    long[ptr_z] := ~~tmp.word[Z_AXIS]
 
 PUB GyroDataOverrun{}: flag
 ' Dummy method
 
 PUB GyroDataRate(rate): curr_rate
 ' Set gyroscope output data rate, in Hz
+'   Valid values:
+'       Low power mode: 0, 12 (12.5), 26, 52
+'       Normal: 104, 208
+'       High-perf mode: 416, 833, 1660, 3330, 6660
+'   Any other value polls the chip and returns the current setting
+    curr_rate := 0
+    readreg(core#CTRL2_G, 1, @curr_rate)
+    case rate
+        0, 12, 26, 52, 104, 208, 416, 833, 1660, 3330, 6660:
+            rate := lookdownz(rate: 0, 12, 26, 52, 104, 208, 416, 833, 1660, {
+}           3330, 6660) << core#ODR_G
+        other:
+            curr_rate := (curr_rate >> core#ODR_G) & core#ODR_G_BITS
+            return lookupz(curr_rate: 0, 12, 26, 52, 104, 208, 416, 833, {
+}           1660, 3330, 6660)
+
+    rate := ((curr_rate & core#ODR_G_MASK) | rate)
+    writereg(core#CTRL2_G, 1, @rate)
 
 PUB GyroDataReady{}: flag
 ' Flag indicating new gyroscope data available
 
 PUB GyroDPS(ptr_x, ptr_y, ptr_z) | tmp[GYRO_DOF]
 ' Read the Gyroscope output registers and scale the outputs to micro
+    gyrodata(@tmp[X_AXIS], @tmp[Y_AXIS], @tmp[Z_AXIS])
+    long[ptr_x] := tmp[X_AXIS] * _gres
+    long[ptr_y] := tmp[Y_AXIS] * _gres
+    long[ptr_z] := tmp[Z_AXIS] * _gres
 
 PUB GyroHighPass(freq): curr_freq
 ' Set Gyroscope high
