@@ -8,6 +8,8 @@ This is a P8X32A/Propeller, P2X8C4M64P/Propeller 2 driver object for the ST LSM6
 ## Salient Features
 
 * SPI connection at 4MHz (P1)
+* Set accelerometer full-scale, data rate
+* Read accelerometer raw data
 
 ## Requirements
 
@@ -32,4 +34,4 @@ P1/SPIN1:
 
 ## TODO
 
-- [ ] TBD
+- [ ] MANY
