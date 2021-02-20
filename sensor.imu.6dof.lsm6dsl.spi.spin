@@ -40,6 +40,7 @@ CON
 
 VAR
 
+    long _ares, _gres
 
 OBJ
 
@@ -70,8 +71,14 @@ PUB Stop{}
 
 PUB Defaults{}
 ' Set factory defaults
+    accelscale(2)
 
 PUB PresetIMUActive{}
+' Like Defaults(), but sets:
+'   * Sensor powered up/actively measuring
+'   * Accelerometer data rate: 52Hz
+    acceldatarate(52)
+    accelscale(2)
 
 PUB AccelADCRes(adc_res): curr_res
 ' dummy method
@@ -97,6 +104,11 @@ PUB AccelDataOverrun{}: flag
 
 PUB AccelDataRate(rate): curr_rate
 ' Set accelerometer output data rate, in Hz
+'   Valid values:
+'       Low power mode: 0, 1 (1.6), 12 (12.5), 26, 52
+'       Normal mode: 104, 208
+'       High-perf mode: 416, 833, 1660, 3330, 6660
+'   Any other value polls the chip and returns the current setting
     readreg(core#CTRL1_XL, 1, @curr_rate)
     case rate
         0, 1, 12, 26, 52, 104, 208, 416, 833, 1660, 3330, 6660:
@@ -113,8 +125,13 @@ PUB AccelDataRate(rate): curr_rate
 PUB AccelDataReady{}: flag
 ' Flag indicating new accelerometer data available
 
-PUB AccelG(ptr_x, ptr_y, ptr_z) | tmpx, tmpy, tmpz
-' Reads the Accelerometer output registers and scales the outputs to micro
+PUB AccelG(ptr_x, ptr_y, ptr_z) | tmp[ACCEL_DOF]
+' Read the Accelerometer data and scale the outputs to
+'   micro-g's (1_000_000 = 1.000000 g = 9.8 m/s/s)
+    acceldata(@tmp[X_AXIS], @tmp[Y_AXIS], @tmp[Z_AXIS])
+    long[ptr_x] := tmp[X_AXIS] * _ares
+    long[ptr_y] := tmp[Y_AXIS] * _ares
+    long[ptr_z] := tmp[Z_AXIS] * _ares
 
 PUB AccelInt{}: flag
 ' Flag indicating accelerometer interrupt asserted
@@ -130,7 +147,9 @@ PUB AccelScale(scale): curr_scl
     readreg(core#CTRL1_XL, 1, @curr_scl)
     case scale
         2, 4, 8, 16:
-            scale := lookdownz(scale: 2, 16, 4, 8) << core#FS_XL
+            scale := lookdownz(scale: 2, 16, 4, 8)
+            _ares := lookupz(scale: 0_061, 0_122, 0_244, 0_488)
+            scale <<= core#FS_XL
         other:
             curr_scl := ((curr_scl >> core#FS_XL) & core#FS_XL_BITS)
             return lookupz(curr_scl: 2, 16, 4, 8)

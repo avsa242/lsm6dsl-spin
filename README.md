@@ -9,7 +9,7 @@ This is a P8X32A/Propeller, P2X8C4M64P/Propeller 2 driver object for the ST LSM6
 
 * SPI connection at 4MHz (P1)
 * Set accelerometer full-scale, data rate
-* Read accelerometer raw data
+* Read accelerometer raw data, or scaled to micro-G's
 
 ## Requirements
 

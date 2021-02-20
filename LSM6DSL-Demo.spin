@@ -40,8 +40,8 @@ PUB Main{} | x, y, z
     x := y := z := 0
     repeat
         ser.position(0, 3)
-        imu.acceldata(@x, @y, @z)
-        ser.printf3(string("%x %x %x"), x, y, z)
+        imu.accelg(@x, @y, @z)
+        ser.printf3(string("%d %d %d"), x, y, z)
 
 PUB Setup{}
 
