@@ -38,6 +38,10 @@ CON
     C                       = 0
     F                       = 1
 
+' Gyroscope operating mode
+    NORM                    = 0
+    SLEEP                   = 1
+
 VAR
 
     long _ares, _gres
@@ -364,6 +368,23 @@ PUB GyroLowPassFilter(freq): curr_freq
 
 PUB GyroLowPower(state): curr_state
 ' Enable low
+
+PUB GyroOpMode(mode): curr_mode
+' Set gyroscope operating mode
+'   Valid values:
+'       NORM (0): Normal operation
+'       SLEEP (1): Sleep/low-power operation
+'   Any other value polls the chip and returns the current setting
+    curr_mode := 0
+    readreg(core#CTRL4_C, 1, @curr_mode)
+    case mode
+        NORM, SLEEP:
+            mode <<= core#SLEEP
+        other:
+            return (curr_mode >> core#SLEEP) & 1
+
+    mode := ((curr_mode & core#SLEEP_MASK) | mode)
+    writereg(core#CTRL4_C, 1, @mode)
 
 PUB GyroScale(scale): curr_scl
 ' Set gyroscope full-scale range, in degrees per second

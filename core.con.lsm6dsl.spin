@@ -72,6 +72,22 @@ CON
         RESET           = (1 << SW_RESET)
 
     CTRL4_C             = $13
+    CTRL4_C_MASK        = $FE
+        DEN_XL_EN       = 7
+        SLEEP           = 6
+        INT2ONINT1      = 5
+        DEN_DRDY_I1     = 4
+        DRDY_DA         = 3
+        I2C_DIS         = 2
+        LPF1_SEL_G      = 1
+        DEN_XL_EN_MASK  = (1 << DEN_XL_EN) ^ CTRL4_C_MASK
+        SLEEP_MASK      = (1 << SLEEP) ^ CTRL4_C_MASK
+        INT2ONINT1_MASK = (1 << INT2ONINT1) ^ CTRL4_C_MASK
+        DEN_DRDY_I1_MASK= (1 << DEN_DRDY_I1) ^ CTRL4_C_MASK
+        DRDY_DA_MASK    = (1 << DRDY_DA) ^ CTRL4_C_MASK
+        I2C_DIS_MASK    = (1 << I2C_DIS) ^ CTRL4_C_MASK
+        LPF1_SEL_G_MASK = (1 << LPF1_SEL_G) ^ CTRL4_C_MASK
+
     CTRL5_C             = $14
     CTRL6_C             = $15
     CTRL7_G             = $16
