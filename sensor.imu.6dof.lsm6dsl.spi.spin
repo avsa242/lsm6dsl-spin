@@ -235,7 +235,7 @@ PUB AccelScale(scale): curr_scl
     case scale
         2, 4, 8, 16:
             scale := lookdownz(scale: 2, 16, 4, 8)
-            _ares := lookupz(scale: 0_061, 0_122, 0_244, 0_488)
+            _ares := lookupz(scale: 0_061, 0_488, 0_122, 0_244)
             scale <<= core#FS_XL
         other:
             curr_scl := ((curr_scl >> core#FS_XL) & core#FS_XL_BITS)
