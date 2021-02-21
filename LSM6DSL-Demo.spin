@@ -5,7 +5,7 @@
     Description: Demo of the LSM6DSL driver
     Copyright (c) 2021
     Started Feb 18, 2021
-    Updated Feb 20, 2021
+    Updated Feb 21, 2021
     See end of file for terms of use.
     --------------------------------------------
 }

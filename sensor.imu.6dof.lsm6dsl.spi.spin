@@ -5,7 +5,7 @@
     Description: Driver for the ST LSM6DSL 6DoF IMU
     Copyright (c) 2021
     Started Feb 18, 2021
-    Updated Feb 19, 2021
+    Updated Feb 21, 2021
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -19,6 +19,14 @@ CON
     MAG_DOF                 = 0
     BARO_DOF                = 0
     DOF                     = ACCEL_DOF + GYRO_DOF + MAG_DOF + BARO_DOF
+
+' Scales and data rates used during calibration/bias/offset process
+    CAL_XL_SCL              = 2
+    CAL_G_SCL               = 125
+    CAL_M_SCL               = 0
+    CAL_XL_DR               = 104
+    CAL_G_DR                = 104
+    CAL_M_DR                = 0
 
 ' Constants used in low-level SPI read/write
     READ                    = 1 << 7
@@ -49,7 +57,7 @@ CON
 VAR
 
     long _ares, _gres
-    long _gbiasraw[GYRO_DOF]
+    long _abias[ACCEL_DOF], _gbias[GYRO_DOF]
 
 OBJ
 
@@ -87,6 +95,7 @@ PUB Preset_IMUActive{}
 '   * Sensor powered up/actively measuring
 '   * Accelerometer: 2g, 52Hz
 '   * Gyroscope: 250dps, 52Hz
+    reset{}
     acceldatarate(52)
     accelscale(2)
     gyrodatarate(52)
@@ -131,6 +140,22 @@ PUB AccelBias(bias_x, bias_y, bias_z, rw) | tmp
                     return
         other:
             return
+
+PUB AccelBiasRes(abiasres): curr_res
+' Set resolution of accelerometer bias/offset values, in micro-g's
+'   Valid values: 0_000977 (0.000977g), 0_015625 (0.015625g)
+'   Any other value polls the chip and returns the current setting
+    curr_res := 0
+    readreg(core#CTRL6_C, 1, @curr_res)
+    case abiasres
+        0_000977, 0_015625:
+            abiasres := lookdownz(abiasres: 0_000977, 0_015625) << core#USR_OFF_W
+        other:
+            curr_res := (curr_res >> core#USR_OFF_W) & 1
+            return lookupz(curr_res: 0_000977, 0_015625)
+
+    abiasres := ((curr_res & core#USR_OFF_W_MASK) | abiasres)
+    writereg(core#CTRL6_C, 1, @abiasres)
 
 PUB AccelClearInt{}
 ' Clear Accelerometer interrupts
@@ -218,8 +243,42 @@ PUB AccelScale(scale): curr_scl
     scale := ((curr_scl & core#FS_XL_MASK) | scale)
     writereg(core#CTRL1_XL, 1, @scale)
 
-PUB CalibrateAccel{} | acceltmp[ACCEL_DOF], axis, x, y, z, samples, scale_orig, drate_orig, fifo_orig, scl
+PUB CalibrateAccel{} | axis, scl_orig, dr_orig, tmpx, tmpy, tmpz, tmp[ACCEL_DOF], samples, scale
 ' Calibrate the accelerometer
+'   NOTE: The accelerometer must be oriented with the package top facing up
+'       for this method to be successful
+    longfill(@axis, 0, 11)                      ' initialize vars to 0
+    samples := CAL_XL_DR                        ' samples = DR, for 1 sec time
+    scl_orig := accelscale(-2)                  ' save user's current settings
+    dr_orig := acceldatarate(-2)
+    accelbias(0, 0, 0, W)                       ' clear existing bias offsets
+
+    case accelbiasres(-2)                       ' set scaling divisor for
+        0_000977:                               '   offset regs, depending
+            scale := 16                         '   on AccelBiasRes()
+        0_015625:
+            scale := 128
+
+    ' set sensor to CAL_XL_SCL range, CAL_XL_DR Hz data rate
+    accelscale(CAL_XL_SCL)
+    acceldatarate(samples)
+
+    ' accumulate and average approx. 1sec worth of samples
+    repeat samples
+        repeat until acceldataready{}
+        acceldata(@tmpx, @tmpy, @tmpz)
+        tmp[X_AXIS] += -tmpx
+        tmp[Y_AXIS] += -tmpy
+        tmp[Z_AXIS] += tmpz-(1_000_000 / _ares) ' negate 1g pull on Z-axis
+
+    repeat axis from X_AXIS to Z_AXIS           ' calc avg and scale down
+        tmp[axis] /= samples
+        tmp[axis] /= scale
+
+    accelbias(tmp[X_AXIS], tmp[Y_AXIS], tmp[Z_AXIS], W)
+
+    accelscale(scl_orig)                        ' restore user's settings
+    acceldatarate(dr_orig)
 
 PUB CalibrateGyro{} | gyrotmp[GYRO_DOF], axis, x, y, z, samples, scale_orig, drate_orig, fifo_orig, scl
 ' Calibrate the accelerometer
@@ -228,7 +287,9 @@ PUB CalibrateMag{} | magtmp[MAG_DOF], axis, x, y, z, samples, scale_orig, drate_
 ' Calibrate the magnetometer
 
 PUB CalibrateXLG{}
-' Dummy method
+' Calibrate accelerometer and gyroscope
+    calibrateaccel{}
+    calibratexlg{}
 
 PUB ClickAxisEnabled(mask): curr_mask
 ' Enable click detection per axis, and per click type
@@ -299,7 +360,7 @@ PUB GyroBias(bias_x, bias_y, bias_z, rw)
 '   Any other value for rw or bias_ parameters is ignored
     case rw
         R:
-            longmove(bias_x, @_gbiasraw, GYRO_DOF)
+            longmove(bias_x, @_gbias, GYRO_DOF)
             return
         W:
             case bias_x
@@ -314,7 +375,7 @@ PUB GyroBias(bias_x, bias_y, bias_z, rw)
                 -32768..32767:
                 other:
                     return
-            longmove(@_gbiasraw, bias_x, GYRO_DOF)
+            longmove(@_gbias, bias_x, GYRO_DOF)
         other:
             return
 
@@ -324,9 +385,9 @@ PUB GyroClearInt{}
 PUB GyroData(ptr_x, ptr_y, ptr_z) | tmp[2]
 ' Reads the Gyroscope output registers
     readreg(core#OUTX_L_G, 6, @tmp)
-    long[ptr_x] := ~~tmp.word[X_AXIS] + _gbiasraw[X_AXIS]
-    long[ptr_y] := ~~tmp.word[Y_AXIS] + _gbiasraw[Y_AXIS]
-    long[ptr_z] := ~~tmp.word[Z_AXIS] + _gbiasraw[Z_AXIS]
+    long[ptr_x] := ~~tmp.word[X_AXIS] + _gbias[X_AXIS]
+    long[ptr_y] := ~~tmp.word[Y_AXIS] + _gbias[Y_AXIS]
+    long[ptr_z] := ~~tmp.word[Z_AXIS] + _gbias[Z_AXIS]
 
 PUB GyroDataOverrun{}: flag
 ' Dummy method
