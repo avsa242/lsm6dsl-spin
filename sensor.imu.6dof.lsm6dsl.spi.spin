@@ -280,8 +280,32 @@ PUB CalibrateAccel{} | axis, scl_orig, dr_orig, tmpx, tmpy, tmpz, tmp[ACCEL_DOF]
     accelscale(scl_orig)                        ' restore user's settings
     acceldatarate(dr_orig)
 
-PUB CalibrateGyro{} | gyrotmp[GYRO_DOF], axis, x, y, z, samples, scale_orig, drate_orig, fifo_orig, scl
-' Calibrate the accelerometer
+PUB CalibrateGyro{} | axis, scl_orig, dr_orig, tmpx, tmpy, tmpz, tmp[GYRO_DOF], samples, scale
+' Calibrate the gyroscope
+    longfill(@axis, 0, 11)                      ' initialize vars to 0
+    samples := CAL_G_DR                         ' samples = DR, for 1 sec time
+    scl_orig := gyroscale(-2)                   ' save user's current settings
+    dr_orig := gyrodatarate(-2)
+    gyrobias(0, 0, 0, W)                        ' clear existing bias offsets
+
+    ' set sensor to CAL_G_SCL range, CAL_G_DR Hz data rate
+    gyroscale(CAL_G_SCL)
+    gyrodatarate(CAL_G_DR)
+    ' accumulate and average approx. 1sec worth of samples
+    repeat samples
+        repeat until gyrodataready{}
+        gyrodata(@tmpx, @tmpy, @tmpz)
+        tmp[X_AXIS] += tmpx
+        tmp[Y_AXIS] += tmpy
+        tmp[Z_AXIS] += tmpz
+
+    repeat axis from X_AXIS to Z_AXIS           ' calc avg
+        tmp[axis] /= samples
+
+    gyrobias(tmp[X_AXIS], tmp[Y_AXIS], tmp[Z_AXIS], W)
+
+    gyroscale(scl_orig)                         ' restore user's settings
+    gyrodatarate(dr_orig)
 
 PUB CalibrateMag{} | magtmp[MAG_DOF], axis, x, y, z, samples, scale_orig, drate_orig, fifo_orig, scl
 ' Calibrate the magnetometer
@@ -289,7 +313,7 @@ PUB CalibrateMag{} | magtmp[MAG_DOF], axis, x, y, z, samples, scale_orig, drate_
 PUB CalibrateXLG{}
 ' Calibrate accelerometer and gyroscope
     calibrateaccel{}
-    calibratexlg{}
+    calibrategyro{}
 
 PUB ClickAxisEnabled(mask): curr_mask
 ' Enable click detection per axis, and per click type
@@ -375,7 +399,7 @@ PUB GyroBias(bias_x, bias_y, bias_z, rw)
                 -32768..32767:
                 other:
                     return
-            longmove(@_gbias, bias_x, GYRO_DOF)
+            longmove(@_gbias, @bias_x, GYRO_DOF)
         other:
             return
 
@@ -385,9 +409,9 @@ PUB GyroClearInt{}
 PUB GyroData(ptr_x, ptr_y, ptr_z) | tmp[2]
 ' Reads the Gyroscope output registers
     readreg(core#OUTX_L_G, 6, @tmp)
-    long[ptr_x] := ~~tmp.word[X_AXIS] + _gbias[X_AXIS]
-    long[ptr_y] := ~~tmp.word[Y_AXIS] + _gbias[Y_AXIS]
-    long[ptr_z] := ~~tmp.word[Z_AXIS] + _gbias[Z_AXIS]
+    long[ptr_x] := ~~tmp.word[X_AXIS] - _gbias[X_AXIS]
+    long[ptr_y] := ~~tmp.word[Y_AXIS] - _gbias[Y_AXIS]
+    long[ptr_z] := ~~tmp.word[Z_AXIS] - _gbias[Z_AXIS]
 
 PUB GyroDataOverrun{}: flag
 ' Dummy method
@@ -521,7 +545,7 @@ PUB GyroScale(scale): curr_scl
             ' 125dps scale is a separate reg field from the other scales,
             ' but treat it as combined, for simplicity
             scale := lookdownz(scale: 250, 125, 500, 0, 1000, 0, 2000)
-            _gres := lookupz(scale: 8_75, 4_375, 17_50, 0, 35_00, 0, 70_00)
+            _gres := lookupz(scale: 8_750, 4_3750, 17_500, 0, 35_000, 0, 70_000)
             scale <<= core#FS_G
         other:
             curr_scl := (curr_scl >> core#FS_G) & core#FS_G_BITS
