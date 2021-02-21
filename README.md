@@ -38,6 +38,10 @@ P1/SPIN1:
 
 * Very early in development - may malfunction, or outright fail to build
 
+## Known issues
+
+* When `GyroScale()` is set to 2000dps, it is possible for the measurements returned by `GyroDPS()` to overflow a 32-bit signed integer - this isn't protected
+
 ## TODO
 
 - [ ] MANY
