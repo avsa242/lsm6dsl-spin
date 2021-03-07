@@ -5,7 +5,7 @@
     Description: Low-level constants
     Copyright (c) 2021
     Started Feb 18, 2021
-    Updated Mar 6, 2021
+    Updated Mar 7, 2021
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -133,6 +133,7 @@ CON
     CTRL10_C            = $19
     MASTER_CFG          = $1A
     WAKEUP_SRC          = $1B
+
     TAP_SRC             = $1C
     D6D_SRC             = $1D
 
@@ -196,9 +197,21 @@ CON
     FUNC_SRC1           = $53
     FUNC_SRC2           = $54
     WRIST_TILT_IA       = $55
+
     TAP_CFG             = $58
     TAP_THS_6D          = $59
     INT_DUR2            = $5A
+    INT_DUR2_MASK       = $FF
+        DUR             = 4
+        QUIET           = 2
+        SHOCK           = 0
+        DUR_BITS        = %1111
+        QUIET_BITS      = %11
+        SHOCK_BITS      = %11
+        DUR_MASK        = (DUR_BITS << DUR) ^ INT_DUR2_MASK
+        QUIET_MASK      = (QUIET_BITS << QUIET) ^ INT_DUR2_MASK
+        SHOCK_MASK      = SHOCK_BITS ^ INT_DUR2_MASK
+
     WAKEUP_THS          = $5B
     WAKEUP_DUR          = $5C
     FREE_FALL           = $5D

@@ -63,6 +63,16 @@ CON
     XL_HIPERF               = 0
     XL_NORM                 = 1
 
+' INT1 interrupts
+    INACTIVE                = 1 << 7
+    SNGTAP                  = 1 << 6
+    WAKEUP                  = 1 << 5
+    FREEFALL                = 1 << 4
+    DBLTAP                  = 1 << 3
+    SIXD                    = 1 << 2
+    TILT                    = 1 << 1
+    TMR_END                 = 1
+
 VAR
 
     long _ares, _gres
@@ -614,6 +624,26 @@ PUB IntInactivity{}: flag
 
 PUB IntLatchEnabled(state): curr_state
 ' Latch interrupt pin when interrupt asserted
+
+PUB Int1Mask(mask): curr_mask
+' Set INT1 pin interrupt mask
+'   Valid values:
+'       Bit 7..0
+'       7 - Inactivity
+'       6 - Single-tap
+'       5 - Wakeup
+'       4 - Free-fall
+'       3 - Double-tap
+'       2 - 6D
+'       1 - Tilt
+'       0 - Timer: counter ended
+    case mask
+        0..%11111111:
+            writereg(core#MD1_CFG, 1, @mask)
+        other:
+            curr_mask := 0
+            readreg(core#MD1_CFG, 1, @curr_mask)
+            return
 
 PUB IntMask(mask): curr_mask
 ' Set interrupt mask

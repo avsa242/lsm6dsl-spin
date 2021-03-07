@@ -13,13 +13,11 @@
 CON
 
 ' Constants used for I2C mode only
-    SLAVE_WR        = core.SLAVE_ADDR
-    SLAVE_RD        = core.SLAVE_ADDR|1
+    SLAVE_WR                = core.SLAVE_ADDR
+    SLAVE_RD                = core.SLAVE_ADDR|1
 
-    DEF_SCL         = 28
-    DEF_SDA         = 29
-    DEF_HZ          = 100_000
-    I2C_MAX_FREQ    = core.I2C_MAX_FREQ
+    DEF_HZ                  = 100_000
+    I2C_MAX_FREQ            = core.I2C_MAX_FREQ
 
 ' Indicate to user apps how many Degrees of Freedom each sub-sensor has
 '   (also imply whether or not it has a particular sensor)
