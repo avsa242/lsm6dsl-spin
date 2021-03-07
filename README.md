@@ -17,6 +17,8 @@ This is a P8X32A/Propeller, P2X8C4M64P/Propeller 2 driver object for the ST LSM6
 * Soft-reset
 * Gyroscope sleep mode
 * Set gyroscope low-pass filter
+* Set INT1 interrupt mask
+* Click/tap-detection (single): set threshold, time, latency, per-axis detection
 
 ## Requirements
 
@@ -31,7 +33,7 @@ P2/SPIN2:
 
 ## Compiler Compatibility
 
-* P1/SPIN1: OpenSpin (tested with 1.00.81), FlexSpin (tested with 5.1.0-beta)
+* P1/SPIN1: OpenSpin (tested with 1.00.81)
 * P2/SPIN2: FlexSpin (tested with 5.2.1-beta)
 * ~~BST~~ (incompatible - no preprocessor)
 * ~~Propeller Tool~~ (incompatible - no preprocessor)
@@ -40,6 +42,7 @@ P2/SPIN2:
 ## Limitations
 
 * Very early in development - may malfunction, or outright fail to build
+* Click detection currently only supports single-click
 
 ## Known issues
 
@@ -50,7 +53,7 @@ P2/SPIN2:
 
 - [x] Add I2C support
 - [x] Port to P2/SPIN2
-- [ ] Add click detection
+- [x] Add click detection (WIP)
 - [ ] Add freefall detection
 - [ ] Add wake-on-motion
 - [ ] Add step detection/counting

@@ -13,13 +13,13 @@
 CON
 
 ' Constants used for I2C mode only
-    SLAVE_WR        = core#SLAVE_ADDR
-    SLAVE_RD        = core#SLAVE_ADDR|1
+    SLAVE_WR                = core#SLAVE_ADDR
+    SLAVE_RD                = core#SLAVE_ADDR|1
 
-    DEF_SCL         = 28
-    DEF_SDA         = 29
-    DEF_HZ          = 100_000
-    I2C_MAX_FREQ    = core#I2C_MAX_FREQ
+    DEF_SCL                 = 28
+    DEF_SDA                 = 29
+    DEF_HZ                  = 100_000
+    I2C_MAX_FREQ            = core#I2C_MAX_FREQ
 
 ' Indicate to user apps how many Degrees of Freedom each sub-sensor has
 '   (also imply whether or not it has a particular sensor)
@@ -144,6 +144,18 @@ PUB Preset_IMUActive{}
     accelscale(2)
     gyrodatarate(52)
     gyroscale(250)
+
+PUB Preset_ClickDet{}
+' Presets for click-detection
+    reset{}
+    accelscale(2)
+    acceldatarate(416)
+    clickthresh(0_125000)
+    clickaxisenabled(%111)
+    clicktime(38)
+    clicklatency(9)
+    clickintenabled(TRUE)
+    int1mask(SNGTAP)
 
 PUB AccelADCRes(adc_res): curr_res
 ' dummy method
@@ -360,25 +372,121 @@ PUB CalibrateXLG{}
     calibrategyro{}
 
 PUB ClickAxisEnabled(mask): curr_mask
-' Enable click detection per axis, and per click type
+' Enable click detection per axis
+'   Valid values:
+'       %000..%111 (%XYZ)
+'   Any other value polls the chip and returns the current setting
+    curr_mask := 0
+    readreg(core#TAP_CFG, 1, @curr_mask)
+    case mask
+        %000..%111:
+            mask <<= core#TAP_EN
+        other:
+            return (curr_mask >> core#TAP_EN) & core#TAP_EN_BITS
+
+    mask := ((curr_mask & core#TAP_EN_MASK) | mask)
+    writereg(core#TAP_CFG, 1, @mask)
 
 PUB Clicked{}: flag
-' Flag indicating the sensor was single or double
+' Flag indicating the sensor was single or double-clicked
+'   Returns: TRUE (-1): sensor was clicked
+    return ((clickedint{} & core#TAPPED) <> 0)
 
 PUB ClickedInt{}: intstat
 ' Clicked interrupt status
+'   Bit: 6..0:
+'       6: Click detected
+'       5: Single-click detected
+'       4: Double-click detected
+'       3: Click acceleration sign: 0 = positive, 1 = negative
+'       2: Click detected on X-axis
+'       1: Click detected on Y-axis
+'       0: Click detected on Z-axis
+    readreg(core#TAP_SRC, 1, @intstat)
 
 PUB ClickIntEnabled(state): curr_state
 ' Enable click interrupts on INT1
+'   Valid values: TRUE (-1 or 1), FALSE (0)
+'   Any other value polls the chip and returns the current setting
+    readreg(core#TAP_CFG, 1, @curr_state)
+    case ||(state)
+        0, 1:
+            state := ||(state) << core#INTS_EN
+        other:
+            return ((curr_state >> core#INTS_EN) == 1)
+
+    state := ((curr_state & core#INTS_EN_MASK) | state)
+    writereg(core#TAP_CFG, 1, @state)
+
+PUB ClickIntsLatched(state): curr_state
+' Enable latching click-detection interrupts
+'   Valid values:
+'       TRUE (-1 or 1): Interrupt asserted until status is read
+'       FALSE (0): Interrupt asserted only for the event's duration
+'   Any other value polls the chip and returns the current setting
+    curr_state := 0
+    readreg(core#TAP_CFG, 1, @curr_state)
+    case ||(state)
+        0, 1:
+            state := ||(state)
+        other:
+            return ((curr_state & 1) == 1)
+
+    state := ((curr_state & core#LIR_MASK) | state)
+    writereg(core#TAP_CFG, 1, @state)
 
 PUB ClickLatency(clat): curr_clat
-' Set maximum elapsed interval between start of click and end of click, in uSec
+' Set minimum elapsed time between first recognized click and
+'   subsequent click, in usec
+'   Valid values: 4_800, 9_600, 19_200, 28_800
+'   Any other value polls the chip and returns the current setting
+    curr_clat := 0
+    readreg(core#INT_DUR2, 1, @curr_clat)
+    case clat
+        4_800, 9_600, 19_200, 28_800:
+            clat := lookdownz(clat: 4_800, 9_600, 19_200, 28_800) << core#QUIET
+        other:
+            curr_clat := ((curr_clat >> core#QUIET) & core#QUIET_BITS)
+            return lookupz(curr_clat: 4_800, 9_600, 19_200, 28_800)
 
-PUB ClickThresh(level): curr_lvl
-' Set threshold for recognizing a click, in micro
+    clat := ((curr_clat & core#QUIET_MASK) | clat)
+    writereg(core#INT_DUR2, 1, @clat)
 
-PUB ClickTime(usec): curr_ctime
+PUB ClickThresh(thresh): curr_thr | ares
+' Set threshold for recognizing a click, in microseconds
+'   Valid values are AccelScale()-dependent
+'       2g:     0..2_000_000    (step size: 0_062_500)
+'       4g:     0..4_000_000    (step size: 0_125_000)
+'       8g:     0..8_000_000    (step size: 0_250_000)
+'       16g:    0..16_000_000   (step size: 0_500_000)
+    ares := (accelscale(-2) * 1_000000) / 32    ' res. = scale / 32
+    curr_thr := 0
+    readreg(core#TAP_THS_6D, 1, @curr_thr)
+    case thresh
+        0..(32*ares):
+            thresh := (thresh / ares)
+        other:
+            return (curr_thr * ares)
+
+    thresh := ((curr_thr & core#TAP_THS_MASK) | thresh)
+    writereg(core#TAP_THS_6D, 1, @thresh)
+
+PUB ClickTime(ctime): curr_ctime
 ' Set maximum elapsed interval between start of click and end of click, in uSec
+'   Valid values: 9_600, 19_200, 38_400, 57_600
+'   Any other value polls the chip and returns the current setting
+'   NOTE: AccelDataRate() should be set to 416Hz or 833Hz, per ST AN5040
+    curr_ctime := 0
+    readreg(core#INT_DUR2, 1, @curr_ctime)
+    case ctime
+        9_600, 19_200, 38_400, 57_600:
+            ctime := lookdownz(ctime: 9_600, 19_200, 38_400, 57_600)
+        other:
+            curr_ctime := (curr_ctime & core#SHOCK_BITS)
+            return lookupz(curr_ctime: 9_600, 19_200, 38_400, 57_600)
+
+    ctime := ((curr_ctime & core#SHOCK_MASK) | ctime)
+    writereg(core#INT_DUR2, 1, @ctime)
 
 PUB ClockSource(src): curr_src
 ' Set sensor clock source

@@ -135,6 +135,19 @@ CON
     WAKEUP_SRC          = $1B
 
     TAP_SRC             = $1C
+    TAP_SRC_MASK        = $7F
+        TAP_IA          = 6
+        SNG_TAP         = 5
+        DBL_TAP         = 4
+        TAP_SIGN        = 3
+        X_TAP           = 2
+        Y_TAP           = 1
+        Z_ZAP           = 0
+        TAPPED          = (1 << TAP_IA)
+        X_TAPPED        = (1 << X_TAP)
+        Y_TAPPED        = (1 << Y_TAP)
+        Z_TAPPED        = 1
+
     D6D_SRC             = $1D
 
     STATUS              = $1E
@@ -199,7 +212,38 @@ CON
     WRIST_TILT_IA       = $55
 
     TAP_CFG             = $58
+    TAP_CFG_MASK        = $FF
+        INTS_EN         = 7
+        INACT_EN1       = 6
+        INACT_END       = 5
+        SLOPE_FDS       = 4
+        TAP_X_EN        = 3
+        TAP_Y_EN        = 2
+        TAP_Z_EN        = 1
+        TAP_EN          = 1
+        LIR             = 0
+        TAP_EN_BITS     = %111
+        INTS_EN_MASK    = (1 << INTS_EN) ^ TAP_CFG_MASK
+        INACT_EN1_MASK  = (1 << INACT_EN1) ^ TAP_CFG_MASK
+        INACT_END_MASK  = (1 << INACT_END) ^ TAP_CFG_MASK
+        SLOPE_FDS_MASK  = (1 << SLOPE_FDS) ^ TAP_CFG_MASK
+        TAP_X_EN_MASK   = (1 << TAP_X_EN) ^ TAP_CFG_MASK
+        TAP_Y_EN_MASK   = (1 << TAP_Y_EN) ^ TAP_CFG_MASK
+        TAP_Z_EN_MASK   = (1 << TAP_Z_EN) ^ TAP_CFG_MASK
+        TAP_EN_MASK     = (TAP_EN_BITS << TAP_EN) ^ TAP_CFG_MASK
+        LIR_MASK        = 1 ^ TAP_CFG_MASK
+
     TAP_THS_6D          = $59
+    TAP_THS_6D_MASK     = $FF
+        D4D_EN          = 7
+        SIXD_THS        = 5
+        TAP_THS         = 0
+        SIXD_THS_BITS   = %11
+        TAP_THS_BITS    = %11111
+        D4D_EN_MASK     = (1 << D4D_EN) ^ TAP_THS_6D_MASK
+        SIXD_THS_MASK   = (SIXD_THS_BITS << SIXD_THS) ^ TAP_THS_6D_MASK
+        TAP_THS_MASK    = TAP_THS_BITS ^ TAP_THS_6D_MASK
+
     INT_DUR2            = $5A
     INT_DUR2_MASK       = $FF
         DUR             = 4
