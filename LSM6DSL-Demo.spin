@@ -5,10 +5,14 @@
     Description: Demo of the LSM6DSL driver
     Copyright (c) 2021
     Started Feb 18, 2021
-    Updated Feb 21, 2021
+    Updated Mar 6, 2021
     See end of file for terms of use.
     --------------------------------------------
 }
+' Uncomment one of the below lines to choose the interface
+#define LSM6DSL_I2C
+'#define LSM6DSL_SPI
+
 CON
 
     _clkmode    = cfg#_clkmode
@@ -18,6 +22,13 @@ CON
     LED         = cfg#LED1
     SER_BAUD    = 115_200
 
+' I2C configuration
+    SCL_PIN     = 28
+    SDA_PIN     = 29
+    I2C_HZ      = 400_000                       ' max is 400_000
+    ADDR_BITS   = 0                             ' 0, 1
+
+' SPI configuration
     CS_PIN      = 0
     SCK_PIN     = 1
     MOSI_PIN    = 2
@@ -34,7 +45,7 @@ OBJ
     ser     : "com.serial.terminal.ansi"
     time    : "time"
     int     : "string.integer"
-    imu     : "sensor.imu.6dof.lsm6dsl.spi"
+    imu     : "sensor.imu.6dof.lsm6dsl.i2cspi"
 
 PUB Main{}
 
@@ -120,8 +131,13 @@ PUB Setup{}
     time.msleep(30)
     ser.clear{}
     ser.strln(string("Serial terminal started"))
+#ifdef LSM6DSL_I2C
+    if imu.startx(SCL_PIN, SDA_PIN, I2C_HZ, ADDR_BITS)
+        ser.strln(string("LSM6DSL driver started (I2C)"))
+#elseifdef LSM6DSL_SPI
     if imu.startx(CS_PIN, SCK_PIN, MOSI_PIN, MISO_PIN)
-        ser.strln(string("LSM6DSL driver started"))
+        ser.strln(string("LSM6DSL driver started (SPI)"))
+#endif
     else
         ser.strln(string("LSM6DSL driver failed to start - halting"))
         imu.stop{}

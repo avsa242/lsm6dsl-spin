@@ -5,12 +5,21 @@
     Description: Driver for the ST LSM6DSL 6DoF IMU
     Copyright (c) 2021
     Started Feb 18, 2021
-    Updated Feb 21, 2021
+    Updated Mar 6, 2021
     See end of file for terms of use.
     --------------------------------------------
 }
 
 CON
+
+' Constants used for I2C mode only
+    SLAVE_WR        = core#SLAVE_ADDR
+    SLAVE_RD        = core#SLAVE_ADDR|1
+
+    DEF_SCL         = 28
+    DEF_SDA         = 29
+    DEF_HZ          = 100_000
+    I2C_MAX_FREQ    = core#I2C_MAX_FREQ
 
 ' Indicate to user apps how many Degrees of Freedom each sub-sensor has
 '   (also imply whether or not it has a particular sensor)
@@ -62,13 +71,33 @@ VAR
 OBJ
 
 ' choose an SPI engine below
+#ifdef LSM6DSL_I2C
+    i2c : "com.i2c"                             ' PASM I2C engine (~1MHz)
+#elseifdef LSM6DSL_SPI
     spi : "com.spi.bitbang"                     ' PASM SPI engine (~4MHz)
+#else
+#error "One of LSM6DSL_I2C or LSM6DSL_SPI must be defined"
+#endif
     core: "core.con.lsm6dsl"                    ' hw-specific low-level const's
     time: "time"                                ' Basic timing functions
 
 PUB Null{}
 ' This is not a top-level object
 
+#ifdef LSM6DSL_I2C
+PUB Startx(SCL_PIN, SDA_PIN, I2C_HZ, ADDR_BITS): status
+' Start using custom IO pins
+    if lookdown(SCL_PIN: 0..31) and lookdown(SDA_PIN: 0..31) and {
+}   I2C_HZ =< core#I2C_MAX_FREQ
+        if (status := i2c.init(SCL_PIN, SDA_PIN, I2C_HZ))
+            time.usleep(core#T_POR)             ' wait for device startup
+            if deviceid{} == core#DEVID_RESP    ' validate device
+                return
+    ' if this point is reached, something above failed
+    ' Re-check I/O pin assignments, bus speed, connections, power
+    ' Lastly - make sure you have at least one free core/cog
+    return FALSE
+#elseifdef LSM6DSL_SPI
 PUB Startx(CS_PIN, SCK_PIN, MOSI_PIN, MISO_PIN): status
 ' Start using custom IO pins
     if lookdown(CS_PIN: 0..31) and lookdown(SCK_PIN: 0..31) and {
@@ -81,10 +110,15 @@ PUB Startx(CS_PIN, SCK_PIN, MOSI_PIN, MISO_PIN): status
     ' Re-check I/O pin assignments, bus speed, connections, power
     ' Lastly - make sure you have at least one free core/cog
     return FALSE
+#endif
 
 PUB Stop{}
 
+#ifdef LSM6DSL_I2C
+    i2c.deinit{}
+#elseifdef LSM6DSL_SPI
     spi.deinit{}
+#endif
 
 PUB Defaults{}
 ' Set factory defaults
@@ -368,7 +402,16 @@ PUB FIFOSource(mask): curr_mask
 ' Set FIFO source data, as a bitmask
 
 PUB FIFOThresh(level): curr_lvl
-' Set FIFO watermark/threshold level
+' Set FIFO watermark/threshold level, in words
+    curr_lvl := 0
+    readreg(core#FIFO_CTRL1, 2, @curr_lvl)
+    case level
+        0..2047:
+        other:
+            return (curr_lvl & core#FTH_BITS)
+
+    level := ((curr_lvl & core#FTH_MASK) | level)
+    writereg(core#FIFO_CTRL1, 2, @level)
 
 PUB FIFOUnreadSamples{}: nr_samples
 ' Number of unread samples stored in FIFO
@@ -712,7 +755,7 @@ PUB XLGDataRate(rate): curr_rate
 PUB XLGSoftReset{}
 ' Perform soft-reset
 
-PRI readReg(reg_nr, nr_bytes, ptr_buff)
+PRI readReg(reg_nr, nr_bytes, ptr_buff) | cmd_pkt
 ' Read nr_bytes from the device into ptr_buff
     case reg_nr                                 ' validate register num
         core#OUT_TEMP_L..core#OUTZ_H_XL, core#OUT_MAG_RAW_X_L:
@@ -723,15 +766,25 @@ PRI readReg(reg_nr, nr_bytes, ptr_buff)
 }       core#TAP_CFG..core#SENS_SYNC_SPI_ERR, core#X_OFS_USR..core#Z_OFS_USR:
         other:                                  ' invalid reg_nr
             return
-
+#ifdef LSM6DSL_I2C
+    cmd_pkt.byte[0] := SLAVE_WR
+    cmd_pkt.byte[1] := reg_nr
+    i2c.start{}
+    i2c.wrblock_lsbf(@cmd_pkt, 2)
+    i2c.start{}
+    i2c.write(SLAVE_RD)
+    i2c.rdblock_lsbf(ptr_buff, nr_bytes, i2c#NAK)
+    i2c.stop{}
+#elseifdef LSM6DSL_SPI
     spi.deselectafter(false)
     spi.wr_byte(reg_nr | core#READ)
 
     ' read LSByte to MSByte
     spi.deselectafter(true)
     spi.rdblock_lsbf(ptr_buff, nr_bytes)
+#endif
 
-PRI writeReg(reg_nr, nr_bytes, ptr_buff)
+PRI writeReg(reg_nr, nr_bytes, ptr_buff) | cmd_pkt
 ' Write nr_bytes to the device from ptr_buff
     case reg_nr
         core#FUNC_CFG_ACCESS, core#SENS_SYNC_TIMEFR..core#DRDY_PULSE_CFG_G, {
@@ -741,12 +794,21 @@ PRI writeReg(reg_nr, nr_bytes, ptr_buff)
         other:
             return
 
+#ifdef LSM6DSL_I2C
+    cmd_pkt.byte[0] := SLAVE_WR
+    cmd_pkt.byte[1] := reg_nr
+    i2c.start{}
+    i2c.wrblock_lsbf(@cmd_pkt, 2)
+    i2c.wrblock_lsbf(ptr_buff, nr_bytes)
+    i2c.stop{}
+#elseifdef LSM6DSL_SPI
     spi.deselectafter(false)
     spi.wr_byte(reg_nr)
 
     ' write LSByte to MSByte
     spi.deselectafter(true)
     spi.wrblock_lsbf(ptr_buff, nr_bytes)
+#endif
 
 DAT
 {

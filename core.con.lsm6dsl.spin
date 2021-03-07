@@ -5,12 +5,16 @@
     Description: Low-level constants
     Copyright (c) 2021
     Started Feb 18, 2021
-    Updated Feb 20, 2021
+    Updated Mar 6, 2021
     See end of file for terms of use.
     --------------------------------------------
 }
 
 CON
+
+' I2C Configuration
+    I2C_MAX_FREQ        = 400_000
+    SLAVE_ADDR          = $6A << 1
 
 ' SPI Configuration
     SPI_MAX_FREQ        = 10_000_000            ' device max SPI bus freq
@@ -25,8 +29,25 @@ CON
     FUNC_CFG_ACCESS     = $01
     SENS_SYNC_TIMEFR    = $04
     SENS_SYNC_RESRATIO  = $05
+
     FIFO_CTRL1          = $06
+    FIFO_CTRL1_MASK     = $FF
+        FTH_LSB         = 0
+        FTH_LSB_BITS    = %11111111
+
+    FIFO_CTRL1_2_MASK   = $CFFF                 ' combined for FTH field
+
     FIFO_CTRL2          = $07
+    FIFO_CTRL2_MASK     = $CF
+        TMR_PED_FIFO_EN = 7
+        TMR_PED_FIFO_DRD= 6
+        FIFO_TEMP_EN    = 3
+        FTH_MSB         = 0
+        FTH_MSB_BITS    = %111
+        FTH_BITS        = %111_11111111         ' FTH_MSB_BITS, FTH_LSB_BITS
+        FTH_MSB_MASK    = FTH_MSB_BITS ^ FIFO_CTRL2_MASK
+        FTH_MASK        = FTH_BITS ^ FIFO_CTRL1_2_MASK
+
     FIFO_CTRL3          = $08
     FIFO_CTRL4          = $09
     FIFO_CTRL5          = $0A

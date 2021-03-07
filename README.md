@@ -41,7 +41,15 @@ P1/SPIN1:
 ## Known issues
 
 * When `GyroScale()` is set to 2000dps, it is possible for the measurements returned by `GyroDPS()` to overflow a 32-bit signed integer - this isn't protected
+* `CalibrateGyro()` gives poor results
 
 ## TODO
 
-- [ ] MANY
+- [x] Add I2C support
+- [ ] Port to P2/SPIN2
+- [ ] Add click detection
+- [ ] Add freefall detection
+- [ ] Add wake-on-motion
+- [ ] Add step detection/counting
+- [ ] Add FIFO support
+
