@@ -537,6 +537,26 @@ PUB FIFOFull(): flag
     readreg(core.FIFO_STATUS2, 1, @flag)
     return ((flag & core.FIFOFULL) == core.FIFOFULL)
 
+PUB FIFOGyroDec(factor): curr_factor
+' Set decimation factor used to fill FIFO slots with gyroscope data
+'   Valid values:
+'       0: gyro data not used in FIFO
+'       1: no decimation (every gyro sample used to fill FIFO)
+'       2, 3, 4, 8, 16, 32: every n'th gyro sample used to fill FIFO
+'   Any other value polls the chip and returns the current setting
+    curr_factor := 0
+    readreg(core.FIFO_CTRL3, 1, @curr_factor)
+    case factor
+        0, 1, 2, 3, 4, 8, 16, 32:
+            factor := lookdownz(factor: 0, 1, 2, 3, 4, 8, 16, 32) {
+}           << core.DEC_FIFO_G
+        other:
+            curr_factor := (curr_factor >> core.DEC_FIFO_G)
+            return lookupz(curr_factor: 0, 1, 2, 3, 4, 8, 16, 32)
+
+    factor := ((curr_factor & core.DEC_FIFO_G_MASK) | factor)
+    writereg(core.FIFO_CTRL3, 1, @factor)
+
 PUB FIFOMode(mode): curr_mode
 ' Set FIFO mode
 '   Valid values:

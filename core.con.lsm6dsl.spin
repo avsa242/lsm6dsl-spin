@@ -49,6 +49,14 @@ CON
         FTH_MASK        = FTH_BITS ^ FIFO_CTRL1_2_MASK
 
     FIFO_CTRL3          = $08
+    FIFO_CTRL3_MASK     = $3F
+        DEC_FIFO_G      = 3
+        DEC_FIFO_XL     = 0
+        DEC_FIFO_G_BITS = %111
+        DEC_FIFO_XL_BITS= %111
+        DEC_FIFO_G_MASK = (DEC_FIFO_G_BITS << DEC_FIFO_G) ^ FIFO_CTRL3_MASK
+        DEC_FIFO_XL_MASK= DEC_FIFO_XL_BITS ^ FIFO_CTRL3_MASK
+
     FIFO_CTRL4          = $09
 
     FIFO_CTRL5          = $0A
