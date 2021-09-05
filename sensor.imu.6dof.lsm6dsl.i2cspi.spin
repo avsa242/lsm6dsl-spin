@@ -530,7 +530,7 @@ PUB FIFOEnabled(state): curr_state
 ' Enable FIFO memory
 
 PUB FIFOFull{}: flag
-' Flag indicating FIFO full/overflowed
+' Flag indicating FIFO full
 '   Returns: TRUE (-1): FIFO full, or FALSE (0): not full
     flag := 0
     readreg(core#FIFO_STATUS2, 1, @flag)
@@ -556,6 +556,13 @@ PUB FIFOMode(mode): curr_mode
 
     mode := ((curr_mode & core#FIFO_MODE_MASK) | mode)
     writereg(core#FIFO_CTRL5, 1, @mode)
+
+PUB FIFOOverrun{}: flag
+' Flag indicating FIFO has overrun
+'   Returns: TRUE (-1): FIFO overrun, or FALSE (0): FIFO not overrun
+    flag := 0
+    readreg(core#FIFO_STATUS2, 1, @flag)
+    return ((flag & core#FIFOOVRRUN) == core#FIFOOVRRUN)
 
 PUB FIFORead(nr_bytes, ptr_data)
 ' Read FIFO data
