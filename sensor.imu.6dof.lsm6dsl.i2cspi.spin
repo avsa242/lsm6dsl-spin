@@ -497,6 +497,28 @@ PUB DeviceID{}: id
 PUB DoubleClickWindow(dctime): curr_dctime
 ' Set maximum elapsed interval between two consecutive clicks, in uSec
 
+PUB FIFODataRate(rate): curr_rate
+' Set FIFO output data rate, in Hz
+'   Valid values:
+'       0, 12, 26, 52, 104, 208, 416, 833, 1660, 3330, 6660
+'   Any other value polls the chip and returns the current setting
+'   NOTE: This setting will effectively be no higher than the sensor output
+'       data rate (e.g., if AccelDataRate() and/or GyroDataRate() == 26,
+'       the FIFO data will update at the same rate, even if it is set to 52)
+    curr_rate := 0
+    readreg(core#FIFO_CTRL5, 1, @curr_rate)
+    case rate
+        0, 12, 26, 52, 104, 208, 416, 833, 1660, 3330, 6660:
+            rate := lookdownz(rate: 0, 12, 26, 52, 104, 208, 416, 833, 1660, {
+}           3330, 6660) << core#ODR_FIFO
+        other:
+            curr_rate := ((curr_rate >> core#ODR_FIFO) & core#ODR_FIFO_BITS)
+            return lookupz(curr_rate: 0, 12, 26, 52, 104, 208, 416, 833, 1660,{
+}           3330, 6660)
+
+    rate := ((curr_rate & core#ODR_FIFO_MASK) | rate)
+    writereg(core#FIFO_CTRL5, 1, @rate)
+
 PUB FIFOEmpty{}: flag
 ' Flag indicating FIFO is empty
 
@@ -516,6 +538,7 @@ PUB FIFOMode(mode): curr_mode
 '       OFF_TRIG (4): FIFO off until trigger is deasserted, then transition to
 '           CONT mode
 '       CONT (6): Continuously fill FIFO, overwriting the oldest samples first
+'   Any other value polls the chip and returns the current setting
     curr_mode := 0
     readreg(core#FIFO_CTRL5, 1, @curr_mode)
     case mode
