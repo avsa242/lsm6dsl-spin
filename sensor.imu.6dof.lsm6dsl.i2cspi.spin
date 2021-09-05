@@ -587,6 +587,9 @@ PUB FIFOThresh(level): curr_lvl
 
 PUB FIFOUnreadSamples{}: nr_samples
 ' Number of unread samples stored in FIFO
+    nr_samples := 0
+    readreg(core#FIFO_STATUS1, 2, @nr_samples)
+    return (nr_samples & core#DIFF_FIFO_BITS)
 
 PUB FIFOWaterMark{}: flag
 ' Flag indicating FIFO watermark/threshold level reached
