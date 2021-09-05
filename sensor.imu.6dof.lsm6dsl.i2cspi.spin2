@@ -588,6 +588,15 @@ PUB FIFOThresh(level): curr_lvl
 PUB FIFOUnreadSamples(): nr_samples
 ' Number of unread samples stored in FIFO
 
+PUB FIFOWaterMark(): flag
+' Flag indicating FIFO watermark/threshold level reached
+'   Returns:
+'       TRUE (-1): FIFO level at or above FIFOThreshold()
+'       FALSE (0): FIFO level below FIFOThreshold()
+    flag := 0
+    readreg(core.FIFO_STATUS2, 1, @flag)
+    return ((flag & core.FIFOWTRMRK) == core.FIFOWTRMRK)
+
 PUB GyroAxisEnabled(mask): curr_mask
 ' Enable data output for gyroscope (all axes)
 
