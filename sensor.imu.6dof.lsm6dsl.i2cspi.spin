@@ -698,7 +698,7 @@ PUB GyroScale(scale): curr_scl
             ' 125dps scale is a separate reg field from the other scales,
             ' but treat it as combined, for simplicity
             scale := lookdownz(scale: 250, 125, 500, 0, 1000, 0, 2000)
-            _gres := lookupz(scale: 8_750, 4_3750, 17_500, 0, 35_000, 0, 70_000)
+            _gres := lookupz(scale: 8_750, 4_375, 17_500, 0, 35_000, 0, 70_000)
             scale <<= core#FS_G
         other:
             curr_scl := (curr_scl >> core#FS_G) & core#FS_G_BITS
