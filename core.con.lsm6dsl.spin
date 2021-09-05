@@ -5,7 +5,7 @@
     Description: Low-level constants
     Copyright (c) 2021
     Started Feb 18, 2021
-    Updated Mar 7, 2021
+    Updated Sep 5, 2021
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -50,7 +50,16 @@ CON
 
     FIFO_CTRL3          = $08
     FIFO_CTRL4          = $09
+
     FIFO_CTRL5          = $0A
+    FIFO_CTRL5_MASK     = $7F
+        ODR_FIFO        = 3
+        FIFO_MODE       = 0
+        ODR_FIFO_BITS   = %1111
+        FIFO_MODE_BITS  = %111
+        ODR_FIFO_MASK   = (ODR_FIFO_BITS << ODR_FIFO) ^ FIFO_CTRL5_MASK
+        FIFO_MODE_MASK  = FIFO_MODE_BITS ^ FIFO_CTRL5_MASK
+
     DRDY_PULSE_CFG_G    = $0B
     INT1_CTRL           = $0D
     INT2_CTRL           = $0E

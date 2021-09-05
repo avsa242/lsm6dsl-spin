@@ -73,6 +73,13 @@ CON
     TILT                    = 1 << 1
     TMR_END                 = 1
 
+' FIFO operating modes
+    OFF                     = %000
+    FIFO                    = %001
+    CONT_TRIG               = %011
+    OFF_TRIG                = %100
+    CONT                    = %110
+
 VAR
 
     long _ares, _gres
@@ -501,6 +508,23 @@ PUB FIFOFull{}: flag
 
 PUB FIFOMode(mode): curr_mode
 ' Set FIFO mode
+'   Valid values:
+'       OFF (0): FIFO disabled/bypassed
+'       FIFO (1): FIFO mode - stop when FIFO is full
+'       CONT_TRIG (3): Continuously fill FIFO, overwriting the oldest samples
+'           first, until trigger is deasserted, then transition to FIFO mode
+'       OFF_TRIG (4): FIFO off until trigger is deasserted, then transition to
+'           CONT mode
+'       CONT (6): Continuously fill FIFO, overwriting the oldest samples first
+    curr_mode := 0
+    readreg(core#FIFO_CTRL5, 1, @curr_mode)
+    case mode
+        OFF, FIFO, CONT_TRIG, OFF_TRIG, CONT:
+        other:
+            return (curr_mode & core#FIFO_MODE_BITS)
+
+    mode := ((curr_mode & core#FIFO_MODE_MASK) | mode)
+    writereg(core#FIFO_CTRL5, 1, @mode)
 
 PUB FIFORead(nr_bytes, ptr_data)
 ' Read FIFO data
