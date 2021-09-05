@@ -95,7 +95,8 @@ PUB Calibrate{}
     ser.position(0, 7)
     ser.str(string("Calibrating..."))
     imu.calibratemag{}
-    imu.calibratexlg{}
+    imu.calibrateaccel{}
+    imu.calibrategyro{}
     ser.positionx(0)
     ser.clearline{}
 
