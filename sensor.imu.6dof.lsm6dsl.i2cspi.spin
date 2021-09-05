@@ -521,6 +521,7 @@ PUB FIFODataRate(rate): curr_rate
 
 PUB FIFOEmpty{}: flag
 ' Flag indicating FIFO is empty
+'   Returns: TRUE (-1): FIFO empty, or FALSE (0): not empty
     flag := 0
     readreg(core#FIFO_STATUS2, 1, @flag)
     return ((flag & core#FIFOEMPTY) == core#FIFOEMPTY)
@@ -530,6 +531,10 @@ PUB FIFOEnabled(state): curr_state
 
 PUB FIFOFull{}: flag
 ' Flag indicating FIFO full/overflowed
+'   Returns: TRUE (-1): FIFO full, or FALSE (0): not full
+    flag := 0
+    readreg(core#FIFO_STATUS2, 1, @flag)
+    return ((flag & core#FIFOFULL) == core#FIFOFULL)
 
 PUB FIFOMode(mode): curr_mode
 ' Set FIFO mode
