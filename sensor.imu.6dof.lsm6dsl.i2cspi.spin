@@ -5,7 +5,7 @@
     Description: Driver for the ST LSM6DSL 6DoF IMU
     Copyright (c) 2021
     Started Feb 18, 2021
-    Updated Mar 6, 2021
+    Updated Sep 5, 2021
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -336,20 +336,15 @@ PUB CalibrateAccel{} | axis, scl_orig, dr_orig, tmpx, tmpy, tmpz, tmp[ACCEL_DOF]
     accelscale(scl_orig)                        ' restore user's settings
     acceldatarate(dr_orig)
 
-PUB CalibrateGyro{} | axis, scl_orig, dr_orig, tmpx, tmpy, tmpz, tmp[GYRO_DOF], samples, scale
+PUB CalibrateGyro{} | axis, tmpx, tmpy, tmpz, tmp[GYRO_DOF], samples
 ' Calibrate the gyroscope
     longfill(@axis, 0, 11)                      ' initialize vars to 0
-    samples := CAL_G_DR                         ' samples = DR, for 1 sec time
-    scl_orig := gyroscale(-2)                   ' save user's current settings
-    dr_orig := gyrodatarate(-2)
+    samples := gyrodatarate(-2)                 ' samples = DR, for 1 sec time
     gyrobias(0, 0, 0, W)                        ' clear existing bias offsets
 
-    ' set sensor to CAL_G_SCL range, CAL_G_DR Hz data rate
-    gyroscale(CAL_G_SCL)
-    gyrodatarate(CAL_G_DR)
     ' accumulate and average approx. 1sec worth of samples
     repeat samples
-        repeat until gyrodataready{}
+        repeat until gyrodataready{}            ' wait for new gyro data
         gyrodata(@tmpx, @tmpy, @tmpz)
         tmp[X_AXIS] += tmpx
         tmp[Y_AXIS] += tmpy
@@ -359,9 +354,6 @@ PUB CalibrateGyro{} | axis, scl_orig, dr_orig, tmpx, tmpy, tmpz, tmp[GYRO_DOF], 
         tmp[axis] /= samples
 
     gyrobias(tmp[X_AXIS], tmp[Y_AXIS], tmp[Z_AXIS], W)
-
-    gyroscale(scl_orig)                         ' restore user's settings
-    gyrodatarate(dr_orig)
 
 PUB CalibrateMag{} | magtmp[MAG_DOF], axis, x, y, z, samples, scale_orig, drate_orig, fifo_orig, scl
 ' Calibrate the magnetometer
