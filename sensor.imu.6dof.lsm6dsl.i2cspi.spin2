@@ -147,6 +147,7 @@ PUB Preset_IMUActive()
 '   * Accelerometer: 2g, 52Hz
 '   * Gyroscope: 250dps, 52Hz
     reset()
+    blockdataupdate()
     acceldatarate(52)
     accelscale(2)
     gyrodatarate(52)
@@ -958,6 +959,18 @@ PUB XLGDataRate(rate): curr_rate
 
 PUB XLGSoftReset()
 ' Perform soft-reset
+
+PRI blockDataUpdate() | tmp
+' Enable block data updates
+'   (wait until MSB and LSB registers are updated internally to update the
+'   values stored therein)
+
+    tmp := 0
+    readreg(core.CTRL3_C, 1, @tmp)
+
+    tmp |= (1 << core.BDU)
+
+    writereg(core.CTRL3_C, 1, @tmp)
 
 PRI readReg(reg_nr, nr_bytes, ptr_buff) | cmd_pkt
 ' Read nr_bytes from the device into ptr_buff
