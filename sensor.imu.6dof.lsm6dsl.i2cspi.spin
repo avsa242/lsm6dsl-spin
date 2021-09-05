@@ -521,6 +521,9 @@ PUB FIFODataRate(rate): curr_rate
 
 PUB FIFOEmpty{}: flag
 ' Flag indicating FIFO is empty
+    flag := 0
+    readreg(core#FIFO_STATUS2, 1, @flag)
+    return ((flag & core#FIFOEMPTY) == core#FIFOEMPTY)
 
 PUB FIFOEnabled(state): curr_state
 ' Enable FIFO memory

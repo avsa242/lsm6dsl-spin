@@ -197,10 +197,27 @@ CON
     SENSHUB10           = $37
     SENSHUB11           = $38
     SENSHUB12           = $39
+
     FIFO_STATUS1        = $3A
+    FIFO_STATUS1_MASK   = $FF
+        DIFF_FIFO       = 0                     ' bits 8..10 in FIFO_STATUS2
+        DIFF_FIFO_BITS  = %11111111111
+
     FIFO_STATUS2        = $3B
+    FIFO_STATUS2_MASK   = $F7
+        WATERM          = 7
+        OVER_RUN        = 6
+        FIFOFULL_SM     = 5
+        FIFO_EMPTY      = 4
+        FIFOWTRMRK      = (1 << WATERM)
+        FIFOOVRRUN      = (1 << OVER_RUN)
+        FIFOFULL        = (1 << FIFOFULL_SM)
+        FIFOEMPTY       = (1 << FIFO_EMPTY)
+
     FIFO_STATUS3        = $3C
+
     FIFO_STATUS4        = $3D
+
     FIFO_DATA_OUT_L     = $3E
     FIFO_DATA_OUT_H     = $3F
     TIMESTAMP0          = $40
