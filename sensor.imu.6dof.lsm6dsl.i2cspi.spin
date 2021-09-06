@@ -21,9 +21,10 @@ CON
     DEF_HZ                  = 100_000
     I2C_MAX_FREQ            = core#I2C_MAX_FREQ
 
-    FIFO_SIZE               = 4096
+' FIFO specifications
+    FIFO_SIZE               = 4096              ' bytes
     FIFO_UNIT               = 2                 ' 1: bytes, 2: words, 4: longs
-    FIFO_SAMPLES_MAX        = (FIFO_SIZE / FIFO_UNIT)
+    FIFO_SAMPLES_MAX        = (FIFO_SIZE / FIFO_UNIT)-1
 
 ' Indicate to user apps how many Degrees of Freedom each sub-sensor has
 '   (also imply whether or not it has a particular sensor)
@@ -84,10 +85,17 @@ CON
     OFF_TRIG                = %100
     CONT                    = %110
 
+' Output data source
+    GYRO_LIVE               = 0
+    GYRO_FIFO               = 1
+    ACCEL_LIVE              = 0
+    ACCEL_FIFO              = 1
+
 VAR
 
     long _ares, _gres
     long _abias[ACCEL_DOF], _gbias[GYRO_DOF]
+    byte _adata_src, _gdata_src
 
 OBJ
 
@@ -230,7 +238,10 @@ PUB AccelClearInt{}
 
 PUB AccelData(ptr_x, ptr_y, ptr_z) | tmp[2]
 ' Read the Accelerometer output registers
-    readreg(core#OUTX_L_XL, 6, @tmp)
+    if _adata_src == ACCEL_LIVE
+        readreg(core#OUTX_L_XL, 6, @tmp)
+    else
+        fifodata(@tmp, 3)
     long[ptr_x] := ~~tmp.word[X_AXIS]
     long[ptr_y] := ~~tmp.word[Y_AXIS]
     long[ptr_z] := ~~tmp.word[Z_AXIS]
@@ -263,6 +274,17 @@ PUB AccelDataReady{}: flag
 '   Returns: TRUE (-1) if new data available, FALSE (0) otherwise
     readreg(core#STATUS, 1, @flag)
     return ((flag & core#XLRDY) == core#XLRDY)
+
+PUB AccelDataSource(src): curr_src
+' Set source of data for AccelData() output
+'   Valid values:
+'      *ACCEL_LIVE (0): live/current data
+'       ACCEL_FIFO (1): FIFO data
+'   Any other value returns the current setting
+    if (src == ACCEL_LIVE) or (src == ACCEL_FIFO)
+        _adata_src := src
+    else
+        return _adata_src
 
 PUB AccelG(ptr_x, ptr_y, ptr_z) | tmp[ACCEL_DOF]
 ' Read the Accelerometer data and scale the outputs to
@@ -625,7 +647,7 @@ PUB FIFOThresh(level): curr_lvl
     curr_lvl := 0
     readreg(core#FIFO_CTRL1, 2, @curr_lvl)
     case level
-        0..2047:
+        0..FIFO_SAMPLES_MAX:
         other:
             return (curr_lvl & core#FTH_BITS)
 
@@ -682,7 +704,10 @@ PUB GyroClearInt{}
 
 PUB GyroData(ptr_x, ptr_y, ptr_z) | tmp[2]
 ' Reads the Gyroscope output registers
-    readreg(core#OUTX_L_G, 6, @tmp)
+    if _gdata_src == GYRO_LIVE
+        readreg(core#OUTX_L_G, 6, @tmp)
+    else
+        fifodata(@tmp, 3)
     long[ptr_x] := ~~tmp.word[X_AXIS] - _gbias[X_AXIS]
     long[ptr_y] := ~~tmp.word[Y_AXIS] - _gbias[Y_AXIS]
     long[ptr_z] := ~~tmp.word[Z_AXIS] - _gbias[Z_AXIS]
@@ -716,6 +741,17 @@ PUB GyroDataReady{}: flag
 '   Returns: TRUE (-1) if new data available, FALSE (0) otherwise
     readreg(core#STATUS, 1, @flag)
     return ((flag & core#GRDY) == core#GRDY)
+
+PUB GyroDataSource(src): curr_src
+' Set source of data for GyroData() output
+'   Valid values:
+'      *GYRO_LIVE (0): live/current data
+'       GYRO_FIFO (1): FIFO data
+'   Any other value returns the current setting
+    if (src == GYRO_LIVE) or (src == GYRO_FIFO)
+        _gdata_src := src
+    else
+        return _gdata_src
 
 PUB GyroDPS(ptr_x, ptr_y, ptr_z) | tmp[GYRO_DOF]
 ' Read the Gyroscope output registers and scale the outputs to micro
