@@ -153,6 +153,23 @@ PUB Defaults{}
 ' Set factory defaults
     reset{}
 
+PUB Preset_FreeFall{}
+' Like Defaults(), but sets:
+'   * Sensor powered up/actively measuring
+'   * Accelerometer: 2g, 416Hz
+'   * Gyroscope: 250dps, 52Hz
+'   * Free-fall duration: 6 samples
+'   * Free-fall threshold: 312mg
+    reset{}
+    blockdataupdate{}
+    acceldatarate(416)
+    accelscale(2)
+    gyrodatarate(52)
+    gyroscale(250)
+    freefalltime(6)
+    freefallthresh(312)
+    clickintenabled(TRUE)
+
 PUB Preset_IMUActive{}
 ' Like Defaults(), but sets:
 '   * Sensor powered up/actively measuring
@@ -684,6 +701,27 @@ PUB FreeFallThresh(thresh): curr_thr
 
     thresh := ((curr_thr & core#FF_THS_MASK) | thresh)
     writereg(core#FREE_FALL, 1, @thresh)
+
+PUB FreeFallTime(fftime): curr_time | ffdur_b4_0, ffdur_b5
+' Set minimum time duration required to recognize free-fall
+    curr_time := 0
+    readreg(core#WAKEUP_DUR, 2, @curr_time)
+    case fftime
+        0..63:
+            ' bit 5 of the FF_DUR field is in the MSB of the WAKEUP_DUR reg,
+            '   but the bottom five bits are the MSBits in the next reg
+            ' they aren't situated such that they can simply be isolated (&),
+            '   so isolate each part separately and combine them when writing
+            ffdur_b5 := ((fftime >> 5) & 1) << 7
+            ffdur_b4_0 := (fftime & %11111) << 11
+            fftime := (ffdur_b5 | ffdur_b4_0)
+        other:
+            ffdur_b5 := ((curr_time >> 7) & 1) << 5
+            ffdur_b4_0 := ((curr_time >> 11) & %11111)
+            return (ffdur_b5 + ffdur_b4_0)
+
+    fftime := ((curr_time & core#FF_DUR_MASK) | fftime)
+    writereg(core#WAKEUP_DUR, 2, @fftime)
 
 PUB GyroAxisEnabled(mask): curr_mask
 ' Enable data output for gyroscope (all axes)
