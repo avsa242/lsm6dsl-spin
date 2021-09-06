@@ -10,8 +10,8 @@ This is a P8X32A/Propeller, P2X8C4M64P/Propeller 2 driver object for the ST LSM6
 
 * SPI connection at 4MHz (P1), up to 10MHz (P2)
 * Set accelerometer and gyroscope full-scale, data rate
-* Read accelerometer raw data, or scaled to micro-G's
-* Read gyroscope raw data, or scaled to micro-dps
+* Read accelerometer raw data, or scaled to micro-G's (live or from FIFO)
+* Read gyroscope raw data, or scaled to micro-dps (live or from FIFO)
 * Data ready flags
 * Manually or automatically set accel/gyro bias offsets (accel: on-chip, gyro: in MCU RAM)
 * Soft-reset
@@ -19,6 +19,8 @@ This is a P8X32A/Propeller, P2X8C4M64P/Propeller 2 driver object for the ST LSM6
 * Set gyroscope low-pass filter
 * Set INT1 interrupt mask
 * Click/tap-detection (single): set threshold, time, latency, per-axis detection
+* Free-fall detection: set threshold, time
+* FIFO functionality: empty, full, overrun, watermark flags, unread sample count, set decimation of data entries to FIFO, set mode, set data rate, set watermark level
 
 ## Requirements
 
@@ -33,8 +35,8 @@ P2/SPIN2:
 
 ## Compiler Compatibility
 
-* P1/SPIN1: OpenSpin (tested with 1.00.81)
-* P2/SPIN2: FlexSpin (tested with 5.2.1-beta)
+* P1/SPIN1: OpenSpin (tested with 1.00.81), FlexSpin (tested with 6.0.0-beta)
+* P2/SPIN2: FlexSpin (tested with 6.0.0-beta)
 * ~~BST~~ (incompatible - no preprocessor)
 * ~~Propeller Tool~~ (incompatible - no preprocessor)
 * ~~PNut~~ (incompatible - no preprocessor)
@@ -47,14 +49,13 @@ P2/SPIN2:
 ## Known issues
 
 * When `GyroScale()` is set to 2000dps, it is possible for the measurements returned by `GyroDPS()` to overflow 32-bit signed integer max - this isn't protected
-* `CalibrateGyro()` gives poor results
 
 ## TODO
 
 - [x] Add I2C support
 - [x] Port to P2/SPIN2
 - [x] Add click detection (WIP)
-- [ ] Add freefall detection
+- [x] Add freefall detection
 - [ ] Add wake-on-motion
 - [ ] Add step detection/counting
-- [ ] Add FIFO support
+- [x] Add FIFO support
