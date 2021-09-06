@@ -5,7 +5,7 @@
     Description: Driver for the ST LSM6DSL 6DoF IMU
     Copyright (c) 2021
     Started Feb 18, 2021
-    Updated Sep 5, 2021
+    Updated Sep 6, 2021
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -20,6 +20,10 @@ CON
     DEF_SDA                 = 29
     DEF_HZ                  = 100_000
     I2C_MAX_FREQ            = core#I2C_MAX_FREQ
+
+    FIFO_SIZE               = 4096
+    FIFO_UNIT               = 2                 ' 1: bytes, 2: words, 4: longs
+    FIFO_SAMPLES_MAX        = (FIFO_SIZE / FIFO_UNIT)
 
 ' Indicate to user apps how many Degrees of Freedom each sub-sensor has
 '   (also imply whether or not it has a particular sensor)
@@ -498,6 +502,11 @@ PUB DeviceID{}: id
 PUB DoubleClickWindow(dctime): curr_dctime
 ' Set maximum elapsed interval between two consecutive clicks, in uSec
 
+PUB FIFOData(ptr_data, nr_smp)
+' Read FIFO data
+    if lookdown(nr_smp: 1..FIFO_SAMPLES_MAX)
+        readreg(core#FIFO_DATA_OUT_L, (nr_smp * FIFO_UNIT), ptr_data)
+
 PUB FIFODataRate(rate): curr_rate
 ' Set FIFO output data rate, in Hz
 '   Valid values:
@@ -584,9 +593,6 @@ PUB FIFOOverrun{}: flag
     flag := 0
     readreg(core#FIFO_STATUS2, 1, @flag)
     return ((flag & core#FIFOOVRRUN) == core#FIFOOVRRUN)
-
-PUB FIFORead(nr_bytes, ptr_data)
-' Read FIFO data
 
 PUB FIFOReset{}
 ' Reset the FIFO
