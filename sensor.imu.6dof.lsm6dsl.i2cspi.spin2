@@ -880,6 +880,15 @@ PUB GyroScale(scale): curr_scl
     scale := ((curr_scl & core.FS_G_MASK) | scale)
     writereg(core.CTRL2_G, 1, @scale)
 
+PUB InFreeFall(): flag
+' Flag indicating device is in free-fall
+'   Returns:
+'       TRUE (-1): device is in free-fall
+'       FALSE (0): device isn't in free-fall
+    flag := 0
+    readreg(core.WAKEUP_SRC, 1, @flag)
+    return ((flag & core.FREEFALL) == core.FREEFALL)
+
 PUB IntActiveState(state): curr_state
 ' Set interrupt pin active state/logic level
 
