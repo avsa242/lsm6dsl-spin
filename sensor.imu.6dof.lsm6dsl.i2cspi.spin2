@@ -669,6 +669,22 @@ PUB FIFOWaterMark(): flag
     readreg(core.FIFO_STATUS2, 1, @flag)
     return ((flag & core.FIFOWTRMRK) == core.FIFOWTRMRK)
 
+PUB FreeFallThresh(thresh): curr_thr
+' Set free-fall threshold, in milli-g's
+'   Valid values: 156, 219, 250, 312, 344, 406, 469, 500
+'   Any other value polls the chip and returns the current setting
+    curr_thr := 0
+    readreg(core.FREE_FALL, 1, @curr_thr)
+    case thresh
+        156, 219, 250, 312, 344, 406, 469, 500:
+            thresh := lookdownz(thresh: 156, 219, 250, 312, 344, 406, 469, 500)
+        other:
+            curr_thr &= core.FF_THS_BITS
+            return lookupz(curr_thr: 156, 219, 250, 312, 344, 406, 469, 500)
+
+    thresh := ((curr_thr & core.FF_THS_MASK) | thresh)
+    writereg(core.FREE_FALL, 1, @thresh)
+
 PUB GyroAxisEnabled(mask): curr_mask
 ' Enable data output for gyroscope (all axes)
 

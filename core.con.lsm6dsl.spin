@@ -5,7 +5,7 @@
     Description: Low-level constants
     Copyright (c) 2021
     Started Feb 18, 2021
-    Updated Sep 5, 2021
+    Updated Sep 6, 2021
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -149,7 +149,18 @@ CON
     CTRL9_XL            = $18
     CTRL10_C            = $19
     MASTER_CFG          = $1A
+
     WAKEUP_SRC          = $1B
+    WAKEUP_SRC_MASK     = $3F
+        FF_IA           = 5
+        SLPST_IA        = 4
+        WU_IA           = 3
+        X_WU            = 2
+        Y_WU            = 1
+        Z_WU            = 0
+        FREEFALL        = (1 << FF_IA)
+        SLEEPING        = (1 << SLPST_IA)
+        AWOKEN          = (1 << WU_IA)
 
     TAP_SRC             = $1C
     TAP_SRC_MASK        = $7F
@@ -291,8 +302,25 @@ CON
         SHOCK_MASK      = SHOCK_BITS ^ INT_DUR2_MASK
 
     WAKEUP_THS          = $5B
+
     WAKEUP_DUR          = $5C
+    WAKEUP_DUR_MASK     = $FF
+        FF_DUR_M        = 7
+        WAKE_DUR        = 5
+        TIMER_HR        = 4
+        SLEEP_DUR       = 0
+
     FREE_FALL           = $5D
+    FREE_FALL_MASK      = $FF
+    WAKE_FREE_MASK      = (WAKEUP_DUR_MASK << 8) | FREE_FALL_MASK
+        FF_DUR_L        = 3
+        FF_THS          = 0
+'        FF_DUR_BITS     = %10000000_11111000    ' combine this and prev. reg
+        FF_DUR_BITS     = %11111000_10000000    ' combine this and prev. reg
+        FF_THS_BITS     = %111
+        FF_DUR_MASK     = FF_DUR_BITS ^ WAKE_FREE_MASK
+        FF_THS_MASK     = FF_THS_BITS ^ FREE_FALL_MASK
+
     MD1_CFG             = $5E
     MD2_CFG             = $5F
     MAST_CMD_CODE       = $60
