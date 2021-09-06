@@ -502,6 +502,26 @@ PUB DeviceID(): id
 PUB DoubleClickWindow(dctime): curr_dctime
 ' Set maximum elapsed interval between two consecutive clicks, in uSec
 
+PUB FIFOAccelDec(factor): curr_factor
+' Set decimation factor used to fill FIFO slots with accelerometer data
+'   Valid values:
+'       0: accel data not used in FIFO
+'       1: no decimation (every accel sample used to fill FIFO)
+'       2, 3, 4, 8, 16, 32: every n'th accel sample used to fill FIFO
+'   Any other value polls the chip and returns the current setting
+    curr_factor := 0
+    readreg(core.FIFO_CTRL3, 1, @curr_factor)
+    case factor
+        0, 1, 2, 3, 4, 8, 16, 32:
+            factor := lookdownz(factor: 0, 1, 2, 3, 4, 8, 16, 32) {
+}           << core.DEC_FIFO_XL
+        other:
+            curr_factor := (curr_factor >> core.DEC_FIFO_XL)
+            return lookupz(curr_factor: 0, 1, 2, 3, 4, 8, 16, 32)
+
+    factor := ((curr_factor & core.DEC_FIFO_XL_MASK) | factor)
+    writereg(core.FIFO_CTRL3, 1, @factor)
+
 PUB FIFOData(ptr_data, nr_smp)
 ' Read FIFO data
     if lookdown(nr_smp: 1..FIFO_SAMPLES_MAX)
