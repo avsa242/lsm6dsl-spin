@@ -36,7 +36,7 @@ OBJ
     cfg     : "core.con.boardcfg.flip"
     ser     : "com.serial.terminal.ansi"
     time    : "time"
-    imu     : "sensor.imu.6dof.lsm6dsl.i2cspi"
+    imu     : "sensor.imu.6dof.lsm6dsl"
 
 PUB Main{} | click_src, int_act, dclicked, sclicked, z_clicked, y_clicked, x_clicked
 
