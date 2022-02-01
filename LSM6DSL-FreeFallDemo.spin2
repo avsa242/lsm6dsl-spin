@@ -62,12 +62,7 @@ OBJ
 
     cfg     : "core.con.boardcfg.p2eval"
     ser     : "com.serial.terminal.ansi"
-    time    : "time"
-#ifdef LSM6DSL_I2C
-    imu     : "sensor.imu.6dof.lsm6dsl.i2c"
-#elseifdef LSM6DSL_SPI
-    imu     : "sensor.imu.6dof.lsm6dsl.spi"
-#endif
+    imu     : "sensor.imu.6dof.lsm6dsl"
 
 PUB Main()
 
