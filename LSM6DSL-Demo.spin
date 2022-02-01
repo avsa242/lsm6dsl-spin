@@ -9,9 +9,6 @@
     See end of file for terms of use.
     --------------------------------------------
 }
-' Uncomment one of the below lines to choose the interface
-#define LSM6DSL_I2C
-'#define LSM6DSL_SPI
 
 CON
 

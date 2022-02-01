@@ -10,9 +10,6 @@
     See end of file for terms of use.
     --------------------------------------------
 }
-' Uncomment one of the following to choose which interface the LSM6DSL is connected to
-'#define LSM6DSL_I2C
-#define LSM6DSL_SPI
 
 CON
 
@@ -109,7 +106,7 @@ PUB Setup()
     if imu.startx(CS_PIN, SCK_PIN, MOSI_PIN, MISO_PIN, SCK_FREQ)
         ser.strln(string("LSM6DSL driver started (SPI)"))
 #elseifdef LSM6DSL_I2C
-    if imu.startx(I2C_SCL, I2C_SDA, I2C_HZ, SLAVE_OPT)
+    if imu.startx(I2C_SCL, I2C_SDA, I2C_HZ, ADDR_BITS)
         ser.strln(string("LSM6DSL driver started (I2C)"))
 #endif
     else
