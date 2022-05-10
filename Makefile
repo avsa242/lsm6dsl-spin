@@ -43,25 +43,25 @@ LSM6DSL-AutoSleepDemo.binary: LSM6DSL-AutoSleepDemo.spin $(SPIN1_DRIVER_FN) $(CO
 	$(P1BUILD) $(SPIN1_LIB_PATH) -b -D $(IFACE) LSM6DSL-AutoSleepDemo.spin
 
 LSM6DSL-AutoSleepDemo.bin2: LSM6DSL-AutoSleepDemo.spin2 $(SPIN2_DRIVER_FN) $(CORE_FN)
-	$(P2BUILD) $(SPIN2_LIB_PATH) -b -2 -D $(IFACE) -o LSM6DSL-AutoSleepDemo.bin2 LSM6DSL-AutoSleepDemo.spin2
+	$(P2BUILD) $(SPIN2_LIB_PATH) -b -D $(IFACE) -o LSM6DSL-AutoSleepDemo.bin2 LSM6DSL-AutoSleepDemo.spin2
 
 LSM6DSL-Demo.binary: LSM6DSL-Demo.spin $(SPIN1_DRIVER_FN) $(CORE_FN)
 	$(P1BUILD) $(SPIN1_LIB_PATH) -b -D $(IFACE) LSM6DSL-Demo.spin
 
 LSM6DSL-Demo.bin2: LSM6DSL-Demo.spin2 $(SPIN2_DRIVER_FN) $(CORE_FN)
-	$(P2BUILD) $(SPIN2_LIB_PATH) -b -2 -D $(IFACE) -o LSM6DSL-Demo.bin2 LSM6DSL-Demo.spin2
+	$(P2BUILD) $(SPIN2_LIB_PATH) -b -D $(IFACE) -o LSM6DSL-Demo.bin2 LSM6DSL-Demo.spin2
 
 LSM6DSL-ClickDemo.binary: LSM6DSL-ClickDemo.spin $(SPIN1_DRIVER_FN) $(CORE_FN)
 	$(P1BUILD) $(SPIN1_LIB_PATH) -b -D $(IFACE) LSM6DSL-ClickDemo.spin
 
 LSM6DSL-ClickDemo.bin2: LSM6DSL-ClickDemo.spin2 $(SPIN2_DRIVER_FN) $(CORE_FN)
-	$(P2BUILD) $(SPIN2_LIB_PATH) -b -2 -D $(IFACE) -o LSM6DSL-ClickDemo.bin2 LSM6DSL-ClickDemo.spin2
+	$(P2BUILD) $(SPIN2_LIB_PATH) -b -D $(IFACE) -o LSM6DSL-ClickDemo.bin2 LSM6DSL-ClickDemo.spin2
 
 LSM6DSL-FreeFallDemo.binary: LSM6DSL-FreeFallDemo.spin $(SPIN1_DRIVER_FN) $(CORE_FN)
 	$(P1BUILD) $(SPIN1_LIB_PATH) -b -D $(IFACE) LSM6DSL-FreeFallDemo.spin
 
 LSM6DSL-FreeFallDemo.bin2: LSM6DSL-FreeFallDemo.spin2 $(SPIN2_DRIVER_FN) $(CORE_FN)
-	$(P2BUILD) $(SPIN2_LIB_PATH) -b -2 -D $(IFACE) -o LSM6DSL-FreeFallDemo.bin2 LSM6DSL-FreeFallDemo.spin2
+	$(P2BUILD) $(SPIN2_LIB_PATH) -b -D $(IFACE) -o LSM6DSL-FreeFallDemo.bin2 LSM6DSL-FreeFallDemo.spin2
 
 # Load binaries to RAM (will build first, if necessary)
 loadp1demo: LSM6DSL-Demo.binary
