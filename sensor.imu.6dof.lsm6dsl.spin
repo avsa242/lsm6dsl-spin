@@ -5,7 +5,7 @@
     Description: Driver for the ST LSM6DSL 6DoF IMU
     Copyright (c) 2022
     Started Feb 18, 2021
-    Updated Apr 21, 2022
+    Updated May 10, 2022
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -1058,10 +1058,22 @@ PUB MagThreshIntMask(mask): curr_mask
 PUB MagThreshIntsEnabled(state)
 ' Enable magnetometer threshold interrupts
 
-PUB MagWord2Gauss(mag_word)
+PUB MagXWord2Gauss(mag_word): mag_gauss
 ' dummy method
 
-PUB MagWord2Tesla(mag_word)
+PUB MagYWord2Gauss(mag_word): mag_gauss
+' dummy method
+
+PUB MagZWord2Gauss(mag_word): mag_gauss
+' dummy method
+
+PUB MagXWord2Tesla(mag_word): mag_tesla
+' dummy method
+
+PUB MagYWord2Tesla(mag_word): mag_tesla
+' dummy method
+
+PUB MagZWord2Tesla(mag_word): mag_tesla
 ' dummy method
 
 PUB MeasureMag{}
