@@ -5,7 +5,7 @@
     Description: Driver for the ST LSM6DSL 6DoF IMU
     Copyright (c) 2022
     Started Feb 18, 2021
-    Updated May 10, 2022
+    Updated May 12, 2022
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -368,10 +368,6 @@ PUB AccelSleepPwrMode(mode): curr_mode
 
     mode := ((curr_mode & core#INACT_EN_MASK) | mode)
     writereg(core#TAP_CFG, 1, @mode)
-
-PUB AccelWord2G(accel_word): g
-' Convert accelerometer ADC word to g's
-    return (accel_word * _ares)
 
 PUB AutoSleepDataRate(rate): curr_rate
 ' Set accelerometer output data rate, in Hz, when in sleep mode
@@ -876,10 +872,6 @@ PUB GyroScale(scale): curr_scl
     scale := ((curr_scl & core#FS_G_MASK) | scale)
     writereg(core#CTRL2_G, 1, @scale)
 
-PUB GyroWord2DPS(gyro_word): dps
-' Convert gyroscope ADC word to degrees per second
-    return (gyro_word * _gres)
-
 PUB InactThresh(thresh): curr_thr | thr_res, thr_max
 ' Set inactivity threshold, in micro-g's
 '   Valid values: TBD
@@ -1057,24 +1049,6 @@ PUB MagThreshIntMask(mask): curr_mask
 
 PUB MagThreshIntsEnabled(state)
 ' Enable magnetometer threshold interrupts
-
-PUB MagXWord2Gauss(mag_word): mag_gauss
-' dummy method
-
-PUB MagYWord2Gauss(mag_word): mag_gauss
-' dummy method
-
-PUB MagZWord2Gauss(mag_word): mag_gauss
-' dummy method
-
-PUB MagXWord2Tesla(mag_word): mag_tesla
-' dummy method
-
-PUB MagYWord2Tesla(mag_word): mag_tesla
-' dummy method
-
-PUB MagZWord2Tesla(mag_word): mag_tesla
-' dummy method
 
 PUB MeasureMag{}
 ' Perform magnetometer measurement
