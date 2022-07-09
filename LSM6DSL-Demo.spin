@@ -3,9 +3,9 @@
     Filename: LSM6DSL-Demo.spin
     Author: Jesse Burt
     Description: Demo of the LSM6DSL driver
-    Copyright (c) 2021
+    Copyright (c) 2022
     Started Feb 18, 2021
-    Updated Dec 27, 2021
+    Updated Jul 9, 2022
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -129,17 +129,15 @@ PUB Setup{}
     time.msleep(30)
     ser.clear{}
     ser.strln(string("Serial terminal started"))
-#ifdef LSM6DSL_I2C
-    if imu.startx(SCL_PIN, SDA_PIN, I2C_HZ, ADDR_BITS)
-        ser.strln(string("LSM6DSL driver started (I2C)"))
-#elseifdef LSM6DSL_SPI
+#ifdef LSM6DSL_SPI
     if imu.startx(CS_PIN, SCK_PIN, MOSI_PIN, MISO_PIN)
         ser.strln(string("LSM6DSL driver started (SPI)"))
+#else
+    if imu.startx(SCL_PIN, SDA_PIN, I2C_HZ, ADDR_BITS)
+        ser.strln(string("LSM6DSL driver started (I2C)"))
 #endif
     else
         ser.strln(string("LSM6DSL driver failed to start - halting"))
-        imu.stop{}
-        time.msleep(5)
         repeat
 
 DAT
