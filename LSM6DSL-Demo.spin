@@ -3,7 +3,7 @@
     Filename: LSM6DSL-Demo.spin
     Author: Jesse Burt
     Description: LSM6DSL driver demo
-        * 9DoF data output
+        * 6DoF data output
     Copyright (c) 2022
     Started Aug 12, 2017
     Updated Jul 13, 2022
