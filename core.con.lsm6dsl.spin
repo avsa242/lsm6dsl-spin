@@ -359,7 +359,7 @@ CON
     Z_OFS_USR           = $75
 
 
-PUB Null{}
+PUB null{}
 ' This is not a top-level object
 
 DAT

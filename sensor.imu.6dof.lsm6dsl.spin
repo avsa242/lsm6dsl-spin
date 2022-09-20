@@ -5,7 +5,7 @@
     Description: Driver for the ST LSM6DSL 6DoF IMU
     Copyright (c) 2022
     Started Feb 18, 2021
-    Updated Jul 13, 2022
+    Updated Sep 20, 2022
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -127,11 +127,11 @@ OBJ
     core: "core.con.lsm6dsl"                    ' hw-specific low-level const's
     time: "time"                                ' Basic timing functions
 
-PUB Null{}
+PUB null{}
 ' This is not a top-level object
 
 #ifdef LSM6DSL_I2C
-PUB Startx(SCL_PIN, SDA_PIN, I2C_HZ, ADDR_BITS): status
+PUB startx(SCL_PIN, SDA_PIN, I2C_HZ, ADDR_BITS): status
 ' Start using custom IO pins
     if lookdown(SCL_PIN: 0..31) and lookdown(SDA_PIN: 0..31) and {
 }   I2C_HZ =< core#I2C_MAX_FREQ
@@ -144,7 +144,7 @@ PUB Startx(SCL_PIN, SDA_PIN, I2C_HZ, ADDR_BITS): status
     ' Lastly - make sure you have at least one free core/cog
     return FALSE
 #elseifdef LSM6DSL_SPI
-PUB Startx(CS_PIN, SCK_PIN, MOSI_PIN, MISO_PIN): status
+PUB startx(CS_PIN, SCK_PIN, MOSI_PIN, MISO_PIN): status
 ' Start using custom IO pins
     if lookdown(CS_PIN: 0..31) and lookdown(SCK_PIN: 0..31) and {
 }   lookdown(MOSI_PIN: 0..31) and lookdown(MISO_PIN: 0..31)
@@ -161,19 +161,20 @@ PUB Startx(CS_PIN, SCK_PIN, MOSI_PIN, MISO_PIN): status
     return FALSE
 #endif
 
-PUB Stop{}
-
+PUB stop{}
+' Stop the driver
 #ifdef LSM6DSL_I2C
     i2c.deinit{}
 #elseifdef LSM6DSL_SPI
     spi.deinit{}
 #endif
+    _CS := _adata_src := _gdata_src := 0
 
-PUB Defaults{}
+PUB defaults{}
 ' Set factory defaults
     reset{}
 
-PUB Preset_FreeFall{}
+PUB preset_freefall{}
 ' Like Defaults(), but sets:
 '   * Sensor powered up/actively measuring
 '   * Accelerometer: 2g, 416Hz
@@ -190,7 +191,7 @@ PUB Preset_FreeFall{}
     freefallthresh(312)
     clickintenabled(TRUE)
 
-PUB Preset_Active{}
+PUB preset_active{}
 ' Like Defaults(), but sets:
 '   * Sensor powered up/actively measuring
 '   * Accelerometer: 2g, 52Hz
@@ -202,7 +203,7 @@ PUB Preset_Active{}
     gyrodatarate(52)
     gyroscale(250)
 
-PUB Preset_ClickDet{}
+PUB preset_clickdet{}
 ' Presets for click-detection
     reset{}
     accelscale(2)
@@ -214,13 +215,13 @@ PUB Preset_ClickDet{}
     clickintenabled(TRUE)
     int1mask(SNGTAP)
 
-PUB AccelADCRes(adc_res): curr_res
+PUB acceladcres(adc_res): curr_res
 ' dummy method
 
-PUB AccelAxisEnabled(xyz_mask): curr_mask
+PUB accelaxisenabled(xyz_mask): curr_mask
 ' dummy method
 
-PUB AccelBias(bias_x, bias_y, bias_z, rw) | tmp
+PUB accelbias(bias_x, bias_y, bias_z, rw) | tmp
 ' Read or write/manually set accelerometer calibration offset values (on-chip)
 '   Valid values: (bias_x, bias_y, bias_z)
 '       When rw == R (0): pointers to variables containing offsets
@@ -254,7 +255,7 @@ PUB AccelBias(bias_x, bias_y, bias_z, rw) | tmp
         other:
             return
 
-PUB AccelBiasRes(abiasres): curr_res
+PUB accelbiasres(abiasres): curr_res
 ' Set resolution of accelerometer bias/offset values, in micro-g's
 '   Valid values: 0_000977 (0.000977g), 0_015625 (0.015625g)
 '   Any other value polls the chip and returns the current setting
@@ -270,10 +271,10 @@ PUB AccelBiasRes(abiasres): curr_res
     abiasres := ((curr_res & core#USR_OFF_W_MASK) | abiasres)
     writereg(core#CTRL6_C, 1, @abiasres)
 
-PUB AccelClearInt{}
+PUB accelclearint{}
 ' Clear Accelerometer interrupts
 
-PUB AccelData(ptr_x, ptr_y, ptr_z) | tmp[2]
+PUB acceldata(ptr_x, ptr_y, ptr_z) | tmp[2]
 ' Read the Accelerometer output registers
     if _adata_src == ACCEL_LIVE
         readreg(core#OUTX_L_XL, 6, @tmp)
@@ -283,10 +284,10 @@ PUB AccelData(ptr_x, ptr_y, ptr_z) | tmp[2]
     long[ptr_y] := ~~tmp.word[Y_AXIS]
     long[ptr_z] := ~~tmp.word[Z_AXIS]
 
-PUB AccelDataOverrun{}: flag
+PUB acceldataoverrun{}: flag
 ' Flag indicating previously acquired data has been overwritten
 
-PUB AccelDataRate(rate): curr_rate
+PUB acceldatarate(rate): curr_rate
 ' Set accelerometer output data rate, in Hz
 '   Valid values:
 '       Low power mode: 0, 1 (1.6), 12 (12.5), 26, 52
@@ -306,13 +307,13 @@ PUB AccelDataRate(rate): curr_rate
     rate := ((curr_rate & core#ODR_XL_MASK) | rate)
     writereg(core#CTRL1_XL, 1, @rate)
 
-PUB AccelDataReady{}: flag
+PUB acceldataready{}: flag
 ' Flag indicating new accelerometer data available
 '   Returns: TRUE (-1) if new data available, FALSE (0) otherwise
     readreg(core#STATUS, 1, @flag)
     return ((flag & core#XLRDY) == core#XLRDY)
 
-PUB AccelDataSource(src): curr_src
+PUB acceldatasource(src): curr_src
 ' Set source of data for AccelData() output
 '   Valid values:
 '      *ACCEL_LIVE (0): live/current data
@@ -323,13 +324,13 @@ PUB AccelDataSource(src): curr_src
     else
         return _adata_src
 
-PUB AccelInt{}: flag
+PUB accelint{}: flag
 ' Flag indicating accelerometer interrupt asserted
 
-PUB AccelLowPassFilter(freq): curr_freq
+PUB accellowpassfilter(freq): curr_freq
 ' Enable accelerometer data low-pass filter
 
-PUB AccelOpMode(mode): curr_mode
+PUB accelopmode(mode): curr_mode
 ' Set accelerometer operating mode
 '   Valid values:
 '      *XL_HIPERF (0): High-performance mode
@@ -346,7 +347,7 @@ PUB AccelOpMode(mode): curr_mode
     mode := ((curr_mode & core#XL_HM_MODE_MASK) | mode)
     writereg(core#CTRL6_C, 1, @mode)
 
-PUB AccelScale(scale): curr_scl
+PUB accelscale(scale): curr_scl
 ' Set the full-scale range of the accelerometer, in g's
 '   Valid values: *2, 4, 8, 16
 '   Any other value polls the chip and returns the current setting
@@ -362,7 +363,7 @@ PUB AccelScale(scale): curr_scl
     scale := ((curr_scl & core#FS_XL_MASK) | scale)
     writereg(core#CTRL1_XL, 1, @scale)
 
-PUB AccelSleepPwrMode(mode): curr_mode
+PUB accelsleeppwrmode(mode): curr_mode
 ' Set accelerometer power mode/oversampling mode, when sleeping
 '   Valid values:
 '       NORMAL (0): Normal
@@ -382,13 +383,13 @@ PUB AccelSleepPwrMode(mode): curr_mode
     mode := ((curr_mode & core#INACT_EN_MASK) | mode)
     writereg(core#TAP_CFG, 1, @mode)
 
-PUB AutoSleepDataRate(rate): curr_rate
+PUB autosleepdatarate(rate): curr_rate
 ' Set accelerometer output data rate, in Hz, when in sleep mode
 '   NOTE: Read-only; provided for API-compatibility only
 '   Returns: 12
     return 12
 
-PUB ClickAxisEnabled(mask): curr_mask
+PUB clickaxisenabled(mask): curr_mask
 ' Enable click detection per axis
 '   Valid values:
 '       %000..%111 (%XYZ)
@@ -404,12 +405,12 @@ PUB ClickAxisEnabled(mask): curr_mask
     mask := ((curr_mask & core#TAP_EN_MASK) | mask)
     writereg(core#TAP_CFG, 1, @mask)
 
-PUB Clicked{}: flag
+PUB clicked{}: flag
 ' Flag indicating the sensor was single or double-clicked
 '   Returns: TRUE (-1): sensor was clicked
     return ((clickedint{} & core#TAPPED) <> 0)
 
-PUB ClickedInt{}: intstat
+PUB clickedint{}: intstat
 ' Clicked interrupt status
 '   Bit: 6..0:
 '       6: Click detected
@@ -421,7 +422,7 @@ PUB ClickedInt{}: intstat
 '       0: Click detected on Z-axis
     readreg(core#TAP_SRC, 1, @intstat)
 
-PUB ClickIntEnabled(state): curr_state
+PUB clickintenabled(state): curr_state
 ' Enable click interrupts on INT1
 '   Valid values: TRUE (-1 or 1), FALSE (0)
 '   Any other value polls the chip and returns the current setting
@@ -435,7 +436,7 @@ PUB ClickIntEnabled(state): curr_state
     state := ((curr_state & core#INTS_EN_MASK) | state)
     writereg(core#TAP_CFG, 1, @state)
 
-PUB ClickIntsLatched(state): curr_state
+PUB clickintslatched(state): curr_state
 ' Enable latching click-detection interrupts
 '   Valid values:
 '       TRUE (-1 or 1): Interrupt asserted until status is read
@@ -452,7 +453,7 @@ PUB ClickIntsLatched(state): curr_state
     state := ((curr_state & core#LIR_MASK) | state)
     writereg(core#TAP_CFG, 1, @state)
 
-PUB ClickLatency(clat): curr_clat
+PUB clicklatency(clat): curr_clat
 ' Set minimum elapsed time between first recognized click and
 '   subsequent click, in usec
 '   Valid values: 4_800, 9_600, 19_200, 28_800
@@ -469,7 +470,7 @@ PUB ClickLatency(clat): curr_clat
     clat := ((curr_clat & core#QUIET_MASK) | clat)
     writereg(core#INT_DUR2, 1, @clat)
 
-PUB ClickThresh(thresh): curr_thr | ares
+PUB clickthresh(thresh): curr_thr | ares
 ' Set threshold for recognizing a click, in microseconds
 '   Valid values are AccelScale()-dependent
 '       2g:     0..2_000_000    (step size: 0_062_500)
@@ -488,7 +489,7 @@ PUB ClickThresh(thresh): curr_thr | ares
     thresh := ((curr_thr & core#TAP_THS_MASK) | thresh)
     writereg(core#TAP_THS_6D, 1, @thresh)
 
-PUB ClickTime(ctime): curr_ctime
+PUB clicktime(ctime): curr_ctime
 ' Set maximum elapsed interval between start of click and end of click, in uSec
 '   Valid values: 9_600, 19_200, 38_400, 57_600
 '   Any other value polls the chip and returns the current setting
@@ -505,17 +506,17 @@ PUB ClickTime(ctime): curr_ctime
     ctime := ((curr_ctime & core#SHOCK_MASK) | ctime)
     writereg(core#INT_DUR2, 1, @ctime)
 
-PUB ClockSource(src): curr_src
+PUB clocksource(src): curr_src
 ' Set sensor clock source
 
-PUB DeviceID{}: id
+PUB deviceid{}: id
 ' Read device identification
     readreg(core#WHO_AM_I, 1, @id)
 
-PUB DoubleClickWindow(dctime): curr_dctime
+PUB doubleclickwindow(dctime): curr_dctime
 ' Set maximum elapsed interval between two consecutive clicks, in uSec
 
-PUB FIFOAccelDec(factor): curr_factor
+PUB fifoacceldec(factor): curr_factor
 ' Set decimation factor used to fill FIFO slots with accelerometer data
 '   Valid values:
 '       0: accel data not used in FIFO
@@ -535,12 +536,12 @@ PUB FIFOAccelDec(factor): curr_factor
     factor := ((curr_factor & core#DEC_FIFO_XL_MASK) | factor)
     writereg(core#FIFO_CTRL3, 1, @factor)
 
-PUB FIFOData(ptr_data, nr_smp)
+PUB fifodata(ptr_data, nr_smp)
 ' Read FIFO data
     if lookdown(nr_smp: 1..FIFO_SAMPLES_MAX)
         readreg(core#FIFO_DATA_OUT_L, (nr_smp * FIFO_UNIT), ptr_data)
 
-PUB FIFODataRate(rate): curr_rate
+PUB fifodatarate(rate): curr_rate
 ' Set FIFO output data rate, in Hz
 '   Valid values:
 '       0, 12, 26, 52, 104, 208, 416, 833, 1660, 3330, 6660
@@ -562,24 +563,24 @@ PUB FIFODataRate(rate): curr_rate
     rate := ((curr_rate & core#ODR_FIFO_MASK) | rate)
     writereg(core#FIFO_CTRL5, 1, @rate)
 
-PUB FIFOEmpty{}: flag
+PUB fifoempty{}: flag
 ' Flag indicating FIFO is empty
 '   Returns: TRUE (-1): FIFO empty, or FALSE (0): not empty
     flag := 0
     readreg(core#FIFO_STATUS2, 1, @flag)
     return ((flag & core#FIFOEMPTY) == core#FIFOEMPTY)
 
-PUB FIFOEnabled(state): curr_state
+PUB fifoenabled(state): curr_state
 ' Enable FIFO memory
 
-PUB FIFOFull{}: flag
+PUB fifofull{}: flag
 ' Flag indicating FIFO full
 '   Returns: TRUE (-1): FIFO full, or FALSE (0): not full
     flag := 0
     readreg(core#FIFO_STATUS2, 1, @flag)
     return ((flag & core#FIFOFULL) == core#FIFOFULL)
 
-PUB FIFOGyroDec(factor): curr_factor
+PUB fifogyrodec(factor): curr_factor
 ' Set decimation factor used to fill FIFO slots with gyroscope data
 '   Valid values:
 '       0: gyro data not used in FIFO
@@ -599,7 +600,7 @@ PUB FIFOGyroDec(factor): curr_factor
     factor := ((curr_factor & core#DEC_FIFO_G_MASK) | factor)
     writereg(core#FIFO_CTRL3, 1, @factor)
 
-PUB FIFOMode(mode): curr_mode
+PUB fifomode(mode): curr_mode
 ' Set FIFO mode
 '   Valid values:
 '       OFF (0): FIFO disabled/bypassed
@@ -620,20 +621,20 @@ PUB FIFOMode(mode): curr_mode
     mode := ((curr_mode & core#FIFO_MODE_MASK) | mode)
     writereg(core#FIFO_CTRL5, 1, @mode)
 
-PUB FIFOOverrun{}: flag
+PUB fifooverrun{}: flag
 ' Flag indicating FIFO has overrun
 '   Returns: TRUE (-1): FIFO overrun, or FALSE (0): FIFO not overrun
     flag := 0
     readreg(core#FIFO_STATUS2, 1, @flag)
     return ((flag & core#FIFOOVRRUN) == core#FIFOOVRRUN)
 
-PUB FIFOReset{}
+PUB fiforeset{}
 ' Reset the FIFO
 
-PUB FIFOSource(mask): curr_mask
+PUB fifosource(mask): curr_mask
 ' Set FIFO source data, as a bitmask
 
-PUB FIFOThresh(level): curr_lvl
+PUB fifothresh(level): curr_lvl
 ' Set FIFO watermark/threshold level, in words
     curr_lvl := 0
     readreg(core#FIFO_CTRL1, 2, @curr_lvl)
@@ -645,13 +646,13 @@ PUB FIFOThresh(level): curr_lvl
     level := ((curr_lvl & core#FTH_MASK) | level)
     writereg(core#FIFO_CTRL1, 2, @level)
 
-PUB FIFOUnreadSamples{}: nr_samples
+PUB fifounreadsamples{}: nr_samples
 ' Number of unread samples stored in FIFO
     nr_samples := 0
     readreg(core#FIFO_STATUS1, 2, @nr_samples)
     return (nr_samples & core#DIFF_FIFO_BITS)
 
-PUB FIFOWaterMark{}: flag
+PUB fifowatermark{}: flag
 ' Flag indicating FIFO watermark/threshold level reached
 '   Returns:
 '       TRUE (-1): FIFO level at or above FIFOThreshold()
@@ -660,7 +661,7 @@ PUB FIFOWaterMark{}: flag
     readreg(core#FIFO_STATUS2, 1, @flag)
     return ((flag & core#FIFOWTRMRK) == core#FIFOWTRMRK)
 
-PUB FreeFallThresh(thresh): curr_thr
+PUB freefallthresh(thresh): curr_thr
 ' Set free-fall threshold, in milli-g's
 '   Valid values: 156, 219, 250, 312, 344, 406, 469, 500
 '   Any other value polls the chip and returns the current setting
@@ -676,7 +677,7 @@ PUB FreeFallThresh(thresh): curr_thr
     thresh := ((curr_thr & core#FF_THS_MASK) | thresh)
     writereg(core#FREE_FALL, 1, @thresh)
 
-PUB FreeFallTime(fftime): curr_time | ffdur_b4_0, ffdur_b5
+PUB freefalltime(fftime): curr_time | ffdur_b4_0, ffdur_b5
 ' Set minimum time duration required to recognize free-fall
     curr_time := 0
     readreg(core#WAKEUP_DUR, 2, @curr_time)
@@ -697,10 +698,10 @@ PUB FreeFallTime(fftime): curr_time | ffdur_b4_0, ffdur_b5
     fftime := ((curr_time & core#FF_DUR_MASK) | fftime)
     writereg(core#WAKEUP_DUR, 2, @fftime)
 
-PUB GyroAxisEnabled(mask): curr_mask
+PUB gyroaxisenabled(mask): curr_mask
 ' Enable data output for gyroscope (all axes)
 
-PUB GyroBias(bias_x, bias_y, bias_z, rw)
+PUB gyrobias(bias_x, bias_y, bias_z, rw)
 ' Read or write/manually set gyroscope calibration offset values
 '   Valid values: (bias_x, bias_y, bias_z)
 '       When rw == R (0): pointers to variables containing offsets
@@ -727,10 +728,10 @@ PUB GyroBias(bias_x, bias_y, bias_z, rw)
         other:
             return
 
-PUB GyroClearInt{}
+PUB gyroclearint{}
 ' Clears out any interrupts set up on the Gyroscope and resets all Gyroscope interrupt registers to their default values.
 
-PUB GyroData(ptr_x, ptr_y, ptr_z) | tmp[2]
+PUB gyrodata(ptr_x, ptr_y, ptr_z) | tmp[2]
 ' Reads the Gyroscope output registers
     if _gdata_src == GYRO_LIVE
         readreg(core#OUTX_L_G, 6, @tmp)
@@ -740,10 +741,10 @@ PUB GyroData(ptr_x, ptr_y, ptr_z) | tmp[2]
     long[ptr_y] := ~~tmp.word[Y_AXIS] - _gbias[Y_AXIS]
     long[ptr_z] := ~~tmp.word[Z_AXIS] - _gbias[Z_AXIS]
 
-PUB GyroDataOverrun{}: flag
+PUB gyrodataoverrun{}: flag
 ' Dummy method
 
-PUB GyroDataRate(rate): curr_rate
+PUB gyrodatarate(rate): curr_rate
 ' Set gyroscope output data rate, in Hz
 '   Valid values:
 '       Low power mode: 0, 12 (12.5), 26, 52
@@ -764,13 +765,13 @@ PUB GyroDataRate(rate): curr_rate
     rate := ((curr_rate & core#ODR_G_MASK) | rate)
     writereg(core#CTRL2_G, 1, @rate)
 
-PUB GyroDataReady{}: flag
+PUB gyrodataready{}: flag
 ' Flag indicating new gyroscope data available
 '   Returns: TRUE (-1) if new data available, FALSE (0) otherwise
     readreg(core#STATUS, 1, @flag)
     return ((flag & core#GRDY) == core#GRDY)
 
-PUB GyroDataSource(src): curr_src
+PUB gyrodatasource(src): curr_src
 ' Set source of data for GyroData() output
 '   Valid values:
 '      *GYRO_LIVE (0): live/current data
@@ -781,25 +782,25 @@ PUB GyroDataSource(src): curr_src
     else
         return _gdata_src
 
-PUB GyroHighPass(freq): curr_freq
+PUB gyrohighpass(freq): curr_freq
 ' Set Gyroscope high
 
-PUB GyroInactiveDur(duration): curr_dur
+PUB gyroinactivedur(duration): curr_dur
 ' Set gyroscope inactivity timer (use GyroInactiveSleep to define behavior on inactivity)
 
-PUB GyroInactiveThr(thresh): curr_thr
+PUB gyroinactivethr(thresh): curr_thr
 ' Set gyroscope inactivity threshold (use GyroInactiveSleep to define behavior on inactivity)
 
-PUB GyroInactiveSleep(state): curr_state
+PUB gyroinactivesleep(state): curr_state
 ' Enable gyroscope sleep mode when inactive (see GyroActivityThr)
 
-PUB GyroInt{}: flag
+PUB gyroint{}: flag
 ' Flag indicating gyroscope interrupt asserted
 
-PUB GyroIntSelect(mode): curr_mode
+PUB gyrointselect(mode): curr_mode
 ' Set gyroscope interrupt generator selection
 
-PUB GyroLowPassFilter(freq): curr_freq
+PUB gyrolowpassfilter(freq): curr_freq
 ' Set gyroscope output data low-pass filter, in Hz
 '   Valid values dependent on GyroDataRate() setting:
 '       833: 155, 195, *245, 293
@@ -845,10 +846,10 @@ PUB GyroLowPassFilter(freq): curr_freq
     freq := ((curr_freq & core#FTYPE_MASK) | freq)
     writereg(core#CTRL6_C, 1, @freq)
 
-PUB GyroLowPower(state): curr_state
+PUB gyrolowpower(state): curr_state
 ' Enable low
 
-PUB GyroOpMode(mode): curr_mode
+PUB gyroopmode(mode): curr_mode
 ' Set gyroscope operating mode
 '   Valid values:
 '      *NORM (0): Normal operation
@@ -865,7 +866,7 @@ PUB GyroOpMode(mode): curr_mode
     mode := ((curr_mode & core#SLP_MASK) | mode)
     writereg(core#CTRL4_C, 1, @mode)
 
-PUB GyroScale(scale): curr_scl
+PUB gyroscale(scale): curr_scl
 ' Set gyroscope full-scale range, in degrees per second
 '   Valid values: 125, *250, 500, 1000, 2000
 '   Any other value polls the chip and returns the current setting
@@ -885,7 +886,7 @@ PUB GyroScale(scale): curr_scl
     scale := ((curr_scl & core#FS_G_MASK) | scale)
     writereg(core#CTRL2_G, 1, @scale)
 
-PUB InactThresh(thresh): curr_thr | thr_res, thr_max
+PUB inactthresh(thresh): curr_thr | thr_res, thr_max
 ' Set inactivity threshold, in micro-g's
 '   Valid values: TBD
 '   Any other value polls the chip and returns the current setting
@@ -902,7 +903,7 @@ PUB InactThresh(thresh): curr_thr | thr_res, thr_max
     thresh := ((curr_thr & core#WK_THS_MASK) | thresh)
     writereg(core#WAKEUP_THS, 1, @thresh)
 
-PUB InactTime(itime): curr_itime | time_res, dur_max
+PUB inacttime(itime): curr_itime | time_res, dur_max
 ' Set inactivity time, in milliseconds
 '   Valid values:
 '   Any other value polls the chip and returns the current setting
@@ -920,7 +921,7 @@ PUB InactTime(itime): curr_itime | time_res, dur_max
 
     writereg(core#WAKEUP_DUR, 1, @itime)
 
-PUB InFreeFall{}: flag
+PUB infreefall{}: flag
 ' Flag indicating device is in free-fall
 '   Returns:
 '       TRUE (-1): device is in free-fall
@@ -929,28 +930,28 @@ PUB InFreeFall{}: flag
     readreg(core#WAKEUP_SRC, 1, @flag)
     return ((flag & core#FREEFALL) == core#FREEFALL)
 
-PUB IntActiveState(state): curr_state
+PUB intactivestate(state): curr_state
 ' Set interrupt pin active state/logic level
 
-PUB IntClear(mask)
+PUB intclear(mask)
 ' Clear interrupts, per clear_mask
 
-PUB IntClearedBy(mode): curr_mode
+PUB intclearedby(mode): curr_mode
 ' Select method by which interrupt status may be cleared
 
-PUB Interrupt{}: src
+PUB interrupt{}: src
 ' Indicate interrupt state
 
-PUB IntInactivity{}: flag
+PUB intinactivity{}: flag
 ' Flag indicating inactivity interrupt asserted
     flag := 0
     readreg(core#WAKEUP_SRC, 1, @flag)
     return (((flag >> core#SLPST_IA) & 1) == 1)
 
-PUB IntLatchEnabled(state): curr_state
+PUB intlatchenabled(state): curr_state
 ' Latch interrupt pin when interrupt asserted
 
-PUB Int1Mask(mask): curr_mask
+PUB int1mask(mask): curr_mask
 ' Set INT1 pin interrupt mask
 '   Valid values:
 '       Bit 7..0
@@ -970,142 +971,133 @@ PUB Int1Mask(mask): curr_mask
             readreg(core#MD1_CFG, 1, @curr_mask)
             return
 
-PUB IntMask(mask): curr_mask
+PUB intmask(mask): curr_mask
 ' Set interrupt mask
 
-PUB IntOutputType(mode): curr_mode
+PUB intoutputtype(mode): curr_mode
 ' Set interrupt pin output type
 
-PUB IntThresh(thresh): curr_thr
+PUB intthresh(thresh): curr_thr
 ' Set interrupt threshold
 
-PUB MagADCRes(adc_res): curr_res
+PUB magadcres(adc_res): curr_res
 ' Set magnetometer ADC resolution, in bits
 
-PUB MagBias(bias_x, bias_y, bias_z, rw) | tmp[2]
+PUB magBias(bias_x, bias_y, bias_z, rw) | tmp[2]
 ' Read or write/manually set magnetometer calibration offset values
 
-PUB MagClearInt{}
+PUB magclearint{}
 ' Clear out any interrupts set up on the Magnetometer and
 
-PUB MagData(ptr_x, ptr_y, ptr_z) | tmp[2]
+PUB magdata(ptr_x, ptr_y, ptr_z) | tmp[2]
 ' Read the Magnetometer output registers
 
-PUB MagDataOverSampling(ratio): curr_osr
+PUB magdataoversampling(ratio): curr_osr
 ' Set oversampling ratio for magnetometer output data
 
-PUB MagDataOverrun{}: flag
+PUB magdataoverrun{}: flag
 ' Flag indicating magnetometer data has overrun
 
-PUB MagDataRate(rate): curr_rate
+PUB magdatarate(rate): curr_rate
 ' Set Magnetometer Output Data Rate, in Hz
 
-PUB MagDataReady{}: flag
+PUB magdataready{}: flag
 ' Flag indicating new magnetometer data available
     return true
 
-PUB MagFastRead(state): curr_state
+PUB magfastread(state): curr_state
 ' Enable reading of only the MSB of data to increase reading efficiency, at the cost of precision and accuracy
 
-PUB MagInt{}: src
+PUB magint{}: src
 ' Magnetometer interrupt source(s)
 
-PUB MagIntLevel(state): curr_state
+PUB magintlevel(state): curr_state
 ' Set active state of INT_MAG pin when magnetometer interrupt asserted
 
-PUB MagIntsEnabled(state): curr_state
+PUB magintsenabled(state): curr_state
 ' Enable magnetometer data threshold interrupt
 
-PUB MagIntsLatched(state): curr_state
+PUB magintslatched(state): curr_state
 ' Latch interrupts asserted by the magnetometer
 
-PUB MagIntThresh(level): curr_thr
+PUB magintthresh(level): curr_thr
 ' Set magnetometer interrupt threshold
 
-PUB MagIntThreshX(thresh): curr_thr
+PUB magintthreshx(thresh): curr_thr
 ' Set magnetometer interrupt threshold, X
 
-PUB MagIntThreshY(thresh): curr_thr
+PUB magintthreshy(thresh): curr_thr
 ' Set magnetometer interrupt threshold, Y
 
-PUB MagIntThreshZ(thresh): curr_thr
+PUB magintthreshz(thresh): curr_thr
 ' Set magnetometer interrupt threshold, Z
 
-PUB MagLowPower(state): curr_state
+PUB maglowpower(state): curr_state
 ' Enable magnetometer low
 
-PUB MagOpMode(mode): curr_mode
+PUB magopmode(mode): curr_mode
 ' Set magnetometer operating mode
 
-PUB MagOverflow{}: flag
+PUB magoverflow{}: flag
 ' Flag indicating magnetometer measurement has overflowed the set range
 
-PUB MagPerf(mode): curr_mode
+PUB magperf(mode): curr_mode
 ' Set magnetometer performance mode
 
-PUB MagScale(scale): curr_scl
+PUB magscale(scale): curr_scl
 ' Set magnetometer full-scale range, in Gauss
 
-PUB MagSelfTest(state): curr_state
+PUB magselftest(state): curr_state
 ' Enable magnetometer on-chip self-test
 
-PUB MagSoftreset{}
+PUB magsoftreset{}
 ' Perform soft-reset
 
-PUB MagThreshDebounce(nr_samples)
+PUB magthreshdebounce(nr_samples)
 ' Set number of debounce samples required before magnetometer threshold
 
-PUB MagThreshInt{}
+PUB magthreshint{}
 ' Magnetometer threshold
 
-PUB MagThreshIntMask(mask): curr_mask
+PUB magthreshintmask(mask): curr_mask
 ' Set magnetometer threshold interrupt mask
 
-PUB MagThreshIntsEnabled(state)
+PUB magthreshintsenabled(state)
 ' Enable magnetometer threshold interrupts
 
-PUB MeasureMag{}
+PUB measuremag{}
 ' Perform magnetometer measurement
 
-PUB OpMode(mode): curr_mode
+PUB opmode(mode): curr_mode
 ' Set operating mode
 
-PUB Powered(state): curr_state
+PUB powered(state): curr_state
 ' Enable device power
 
-PUB ReadMagAdj{}
+PUB readmagadj{}
 ' Read magnetometer factory sensitivity adjustment values
 
-PUB Reset{} | tmp
+PUB reset{} | tmp
 ' Reset the device
     tmp := core#RESET
     writereg(core#CTRL3_C, 1, @tmp)
 
-PUB Temperature{}: temp
+PUB temperature{}: temp
 ' Read chip temperature
 
-PUB TempDataRate(rate): curr_rate
+PUB tempdatarate(rate): curr_rate
 ' Set temperature output data rate, in Hz
 
-PUB TempDataReady{}: flag
+PUB tempdataready{}: flag
 ' Flag indicating new temperature sensor data available
 
-PUB TempScale(scale): curr_scl
+PUB tempscale(scale): curr_scl
 ' Set temperature scale used by Temperature method
 
-PUB XLGDataReady{}: flag
-' Flag indicating new gyroscope/accelerometer data is ready to be read
-
-PUB TempOffset(offs): curr_offs
+PUB tempoffset(offs): curr_offs
 ' Set room temperature offset for Temperature{}
 
-PUB XLGDataRate(rate): curr_rate
-' Set output data rate, in Hz, of accelerometer and gyroscope
-
-PUB XLGSoftReset{}
-' Perform soft-reset
-
-PRI blockDataUpdate{} | tmp
+PRI blockdataupdate{} | tmp
 ' Enable block data updates
 '   (wait until MSB and LSB registers are updated internally to update the
 '   values stored therein)
@@ -1117,7 +1109,7 @@ PRI blockDataUpdate{} | tmp
 
     writereg(core#CTRL3_C, 1, @tmp)
 
-PRI readReg(reg_nr, nr_bytes, ptr_buff) | cmd_pkt
+PRI readreg(reg_nr, nr_bytes, ptr_buff) | cmd_pkt
 ' Read nr_bytes from the device into ptr_buff
     case reg_nr                                 ' validate register num
         core#OUT_TEMP_L..core#OUTZ_H_XL, core#OUT_MAG_RAW_X_L:
@@ -1146,7 +1138,7 @@ PRI readReg(reg_nr, nr_bytes, ptr_buff) | cmd_pkt
     outa[_CS] := 1
 #endif
 
-PRI writeReg(reg_nr, nr_bytes, ptr_buff) | cmd_pkt
+PRI writereg(reg_nr, nr_bytes, ptr_buff) | cmd_pkt
 ' Write nr_bytes to the device from ptr_buff
     case reg_nr
         core#FUNC_CFG_ACCESS, core#SENS_SYNC_TIMEFR..core#DRDY_PULSE_CFG_G, {
