@@ -6,7 +6,7 @@
         Auto-sleep functionality
     Copyright (c) 2022
     Started Dec 27, 2021
-    Updated Jul 9, 2022
+    Updated Oct 2, 2022
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -44,7 +44,7 @@ OBJ
     cfg     : "core.con.boardcfg.flip"
     ser     : "com.serial.terminal.ansi"
     time    : "time"
-    imu     : "sensor.imu.6dof.lsm6dsl"
+    sensor  : "sensor.imu.6dof.lsm6dsl"
     core    : "core.con.lsm6dsl"
 
 VAR
@@ -52,22 +52,22 @@ VAR
     long _isr_stack[50]                         ' stack for ISR core
     long _intflag                               ' interrupt flag
 
-PUB Main{} | intsource, temp, sysmod
+PUB main{} | intsource, temp, sysmod
 
     setup{}
-    imu.preset_active{}                         ' default settings, but enable
+    sensor.preset_active{}                      ' default settings, but enable
                                                 ' sensor power, and set
                                                 ' scale factors
 
-    imu.acceldatarate(208)
-    imu.accelscale(2)
-    imu.gyrodatarate(104)
-    imu.gyroscale(250)
+    sensor.accel_data_rate(208)
+    sensor.accel_scale(2)
+    sensor.gyro_data_rate(104)
+    sensor.gyro_scale(250)
 
-    imu.inacttime(5_000)                        ' inactivity timeout ~5sec
-    imu.inactthresh(0_250000)
-    imu.accelsleeppwrmode(imu#LOPWR_GSLEEP)
-    imu.int1mask(imu#INACTIVE)
+    sensor.inact_time(5_000)                    ' inactivity timeout ~5sec
+    sensor.inact_thresh(0_250000)
+    sensor.accel_slp_pwr_mode(sensor#LOPWR_GSLEEP)
+    sensor.int1_mask(sensor#INACTIVE)
 
     dira[LED1] := 1
 
@@ -80,19 +80,19 @@ PUB Main{} | intsource, temp, sysmod
     ' When the sensor goes to sleep, it should turn off.
     repeat
         ser.position(0, 3)
-        acceldata{}                             ' show accel data
-        intsource := imu.intinactivity{}
-        if _intflag                             ' interrupt triggered
-            intsource := imu.intinactivity{}
+        show_accel_data{}                       ' show accel data
+        intsource := sensor.int_inactivity{}
+        if (_intflag)                           ' interrupt triggered
+            intsource := sensor.int_inactivity{}
             if intsource                        ' (in)activity event
                 outa[LED1] := 0
             else
                 outa[LED1] := 1
         else
-        if ser.rxcheck{} == "c"                 ' press the 'c' key in the demo
-            calibrate{}                         ' to calibrate sensor offsets
+        if (ser.rxcheck{} == "c")               ' press the 'c' key in the demo
+            cal_accel{}                         ' to calibrate sensor offsets
 
-PRI ISR{}
+PRI cog_isr{}
 ' Interrupt service routine
     dira[INT_PIN] := 0                          ' INT_PIN as input
     repeat
@@ -101,26 +101,26 @@ PRI ISR{}
         waitpeq(|< INT_PIN, |< INT_PIN, 0)      ' now wait for it to clear
         _intflag := 0                           '   clear flag
 
-PUB Setup{}
+PUB setup{}
 
     ser.start(SER_BAUD)
     time.msleep(30)
     ser.clear{}
     ser.strln(string("Serial terminal started"))
 #ifdef LSM6DSL_SPI
-    if imu.startx(CS_PIN, SCK_PIN, MOSI_PIN, MISO_PIN)
+    if sensor.startx(CS_PIN, SCK_PIN, MOSI_PIN, MISO_PIN)
         ser.strln(string("LSM6DSL driver started (SPI)"))
 #else
-    if imu.startx(SCL_PIN, SDA_PIN, I2C_FREQ, ADDR_BITS)
+    if sensor.startx(SCL_PIN, SDA_PIN, I2C_FREQ, ADDR_BITS)
         ser.strln(string("LSM6DSL driver started (I2C)"))
 #endif
     else
         ser.strln(string("LSM6DSL driver failed to start - halting"))
         repeat
 
-    cognew(isr, @_isr_stack)                    ' start ISR in another core
+    cognew(cog_isr{}, @_isr_stack)                    ' start ISR in another core
 
-#include "imudemo.common.spinh"
+#include "acceldemo.common.spinh"
 
 DAT
 {

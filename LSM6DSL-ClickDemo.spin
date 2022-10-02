@@ -6,7 +6,7 @@
         click-detection functionality
     Copyright (c) 2022
     Started Mar 7, 2021
-    Updated Jul 9, 2022
+    Updated Oct 2, 2022
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -40,16 +40,16 @@ OBJ
     time    : "time"
     imu     : "sensor.imu.6dof.lsm6dsl"
 
-PUB Main{} | click_src, int_act, dclicked, sclicked, z_clicked, y_clicked, x_clicked
+PUB main{} | click_src, int_act, dclicked, sclicked, z_clicked, y_clicked, x_clicked
 
     setup{}
-    imu.preset_clickdet{}                       ' preset settings for
+    imu.preset_click_det{}                       ' preset settings for
                                                 ' click-detection
 
     ser.hidecursor{}                            ' hide terminal cursor
 
     repeat until ser.rxcheck{} == "q"           ' press q to quit
-        click_src := imu.clickedint{}
+        click_src := imu.clicked_int{}
         int_act := ((click_src >> 6) & 1)
         dclicked := ((click_src >> 4) & 1)
         sclicked := ((click_src >> 5) & 1)
@@ -67,7 +67,7 @@ PUB Main{} | click_src, int_act, dclicked, sclicked, z_clicked, y_clicked, x_cli
     ser.showcursor{}                            ' restore terminal cursor
     repeat
 
-PRI YesNo(val): resp
+PRI yesno(val): resp
 ' Return pointer to string "Yes" or "No" depending on value called with
     case val
         0:
@@ -75,7 +75,7 @@ PRI YesNo(val): resp
         1:
             return string("Yes")
 
-PUB Setup{}
+PUB setup{}
 
     ser.start(SER_BAUD)
     time.msleep(30)
