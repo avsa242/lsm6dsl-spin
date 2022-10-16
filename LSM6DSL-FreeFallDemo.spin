@@ -6,7 +6,7 @@
         Free-fall detection functionality
     Copyright (c) 2022
     Started Sep 6, 2021
-    Updated Jul 9, 2022
+    Updated Oct 16, 2022
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -39,12 +39,12 @@ CON
 
 OBJ
 
-    cfg     : "core.con.boardcfg.flip"
+    cfg     : "boardcfg.flip"
     ser     : "com.serial.terminal.ansi"
     time    : "time"
     imu     : "sensor.imu.6dof.lsm6dsl"
 
-PUB Main{}
+PUB main{}
 
     setup{}
     imu.preset_freefall{}                       ' default settings, but enable
@@ -59,7 +59,7 @@ PUB Main{}
         '   clears the interrupt. This is necessary when routing the free-fall
         '   interrupt to one of the sensor's INT pins, if interrupts are being
         '   latched
-        if imu.infreefall{}
+        if imu.in_freefall{}
             ser.strln(string("Sensor in free-fall!"))
             ser.str(string("Press any key to reset"))
             ser.charin{}
@@ -70,17 +70,16 @@ PUB Main{}
         if ser.rxcheck{} == "c"                 ' press the 'c' key in the demo
             calibrate{}                         ' to calibrate sensor offsets
 
-PUB Calibrate{}
+PUB calibrate{}
 
     ser.position(0, 7)
     ser.str(string("Calibrating..."))
-    imu.calibratemag{}
-    imu.calibrateaccel{}
-    imu.calibrategyro{}
+    imu.calibrate_accel{}
+    imu.calibrate_gyro{}
     ser.positionx(0)
     ser.clearline{}
 
-PUB Setup{}
+PUB setup{}
 
     ser.start(SER_BAUD)
     time.msleep(30)
