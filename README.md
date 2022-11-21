@@ -28,11 +28,13 @@ This is a P8X32A/Propeller, P2X8C4M64P/Propeller 2 driver object for the ST LSM6
 P1/SPIN1:
 * spin-standard-library
 * 1 extra core/cog for the PASM I2C engine
-* sensor.imu.common.spinh (provided by spin-standard-library)
+* sensor.accel.common.spinh (provided by spin-standard-library)
+* sensor.gyroscope.common.spinh (provided by spin-standard-library)
 
 P2/SPIN2:
 * p2-spin-standard-library
-* sensor.imu.common.spin2h (provided by p2-spin-standard-library)
+* sensor.accel.common.spinh (provided by spin-standard-library)
+* sensor.gyroscope.common.spinh (provided by spin-standard-library)
 
 ## Compiler Compatibility
 
@@ -53,5 +55,5 @@ P2/SPIN2:
 
 ## Known issues
 
-* When `GyroScale()` is set to 2000dps, it is possible for the measurements returned by `GyroDPS()` to overflow 32-bit signed integer max - this isn't protected
+* When `gyro_scale()` is set to 2000dps, it is possible for the measurements returned by `gyro_dps()` to overflow 32-bit signed integer max - this isn't protected
 
