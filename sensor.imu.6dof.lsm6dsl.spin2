@@ -3,9 +3,9 @@
     Filename: sensor.imu.6dof.lsm6dsl.spin2
     Author: Jesse Burt
     Description: Driver for the ST LSM6DSL 6DoF IMU (P2 version)
-    Copyright (c) 2022
+    Copyright (c) 2023
     Started Mar 6, 2021
-    Updated Nov 8, 2022
+    Updated Jan 7, 2023
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -36,7 +36,7 @@ CON
 
 ' Scales and data rates used during calibration/bias/offset process
     CAL_XL_SCL              = 2
-    CAL_G_SCL               = 125
+    CAL_G_SCL               = 250
     CAL_M_SCL               = 0
     CAL_XL_DR               = 104
     CAL_G_DR                = 104
@@ -210,9 +210,9 @@ PUB accel_set_bias(x, y, z)
 ' Write accelerometer calibration offset values (on-chip)
 '   Valid values:
 '       -127..127
-    x := -127 #> x <# 127
-    y := -127 #> y <# 127
-    z := -127 #> z <# 127
+    x := -127 #> (x / _ares) <# 127
+    y := -127 #> (y / _ares) <# 127
+    z := -127 #> (z / _ares) <# 127
     writereg(core.X_OFS_USR, 1, @x)
     writereg(core.Y_OFS_USR, 1, @y)
     writereg(core.Z_OFS_USR, 1, @z)
