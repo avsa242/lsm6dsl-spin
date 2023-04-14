@@ -5,7 +5,7 @@
     Description: Driver for the ST LSM6DSL 6DoF IMU
     Copyright (c) 2023
     Started Feb 18, 2021
-    Updated Jan 7, 2023
+    Updated Apr 14, 2023
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -134,6 +134,7 @@ PUB startx(SCL_PIN, SDA_PIN, I2C_HZ, ADDR_BITS): status
 }   I2C_HZ =< core#I2C_MAX_FREQ
         if (status := i2c.init(SCL_PIN, SDA_PIN, I2C_HZ))
             time.usleep(core#T_POR)             ' wait for device startup
+            _bank_sel := -1                     ' init bank select
             if (dev_id{} == core#DEVID_RESP)    ' validate device
                 return
     ' if this point is reached, something above failed
@@ -150,6 +151,7 @@ PUB startx(CS_PIN, SCK_PIN, MOSI_PIN, MISO_PIN): status
             _CS := CS_PIN
             outa[_CS] := 1
             dira[_CS] := 1
+            _bank_sel := -1                     ' init bank select
             if (dev_id{} == core#DEVID_RESP)    ' validate device
                 return
     ' if this point is reached, something above failed
@@ -864,6 +866,38 @@ PUB reset{} | tmp
     tmp := core#RESET
     writereg(core#CTRL3_C, 1, @tmp)
 
+CON
+
+    BANK_A = core#BANK_A
+    BANK_B = core#BANK_B
+
+VAR
+
+    byte _bank_sel
+
+PRI bank_sel(bnk)
+' Select register bank
+'   Valid values:
+'       0: bank A and B disabled
+'       BANK_A ($80): bank A
+'       BANK_B ($A0): bank B
+    case bnk
+        0, BANK_A, BANK_B:
+            if ( bnk <> _bank_sel )             ' only update if the last bank_sel() was different
+#ifdef LSM6DSL_I2C
+                i2c.start{}
+                i2c.write(SLAVE_WR)
+                i2c.write(core#FUNC_CFG_ACCESS)
+                i2c.write(bnk)
+                i2c.stop{}
+#elseifdef LSM6DSL_SPI
+                outa[_CS] := 0
+                spi.wr_byte(core#FUNC_CFG_ACCESS)
+                spi.wr_byte(bnk)
+                outa[_CS] := 1
+            _bank_sel := bnk                    ' save the selection for next time
+#endif
+
 PRI blk_updt_ena{} | tmp
 ' Enable block data updates
 '   (wait until MSB and LSB registers are updated internally to update the
@@ -884,9 +918,13 @@ PRI readreg(reg_nr, nr_bytes, ptr_buff) | cmd_pkt
         core#FUNC_CFG_ACCESS, core#SENS_SYNC_TIMEFR..core#DRDY_PULSE_CFG_G, {
 }       core#INT1_CTRL..core#STATUS, core#SENSHUB1..core#TIMESTAMP2, {
 }       core#STP_TIMESTMP_L..core#WRIST_TILT_IA, {
-}       core#TAP_CFG..core#SENS_SYNC_SPI_ERR, core#X_OFS_USR..core#Z_OFS_USR:
+}       core#TAP_CFG..core#SENS_SYNC_SPI_ERR, core#X_OFS_USR..core#Z_OFS_USR, {
+}       core#SLV0_ADD..core#CFG_PED_THRESH, core#SM_THS..core#STEP_CNT_DELTA, {
+}       core#MAG_SI_XX..core#MAG_OFFZ_H:
+            bank_sel(reg_nr.byte[1])
         other:                                  ' invalid reg_nr
             return
+
 #ifdef LSM6DSL_I2C
     cmd_pkt.byte[0] := SLAVE_WR
     cmd_pkt.byte[1] := reg_nr
@@ -911,7 +949,11 @@ PRI writereg(reg_nr, nr_bytes, ptr_buff) | cmd_pkt
         core#FUNC_CFG_ACCESS, core#SENS_SYNC_TIMEFR..core#DRDY_PULSE_CFG_G, {
 }       core#INT1_CTRL, core#INT2_CTRL, core#CTRL1_XL..core#MASTER_CFG, {
 }       core#TIMESTAMP2, core#TAP_CFG..core#SENS_SYNC_SPI_ERR, {
-}       core#X_OFS_USR..core#Z_OFS_USR:
+}       core#X_OFS_USR..core#Z_OFS_USR, {
+}       core#SLV0_ADD..core#CFG_PED_THRESH, core#SM_THS..core#STEP_CNT_DELTA, {
+}       core#MAG_SI_XX..core#MAG_OFFZ_H:
+            bank_sel(reg_nr.byte[1])
+
         other:
             return
 
@@ -933,7 +975,7 @@ PRI writereg(reg_nr, nr_bytes, ptr_buff) | cmd_pkt
 
 DAT
 {
-Copyright 2022 Jesse Burt
+Copyright 2023 Jesse Burt
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 associated documentation files (the "Software"), to deal in the Software without restriction,
