@@ -1,5 +1,4 @@
 # lsm6dsl-spin
-
 --------------
 
 This is a P8X32A/Propeller, P2X8C4M64P/Propeller 2 driver object for the ST LSM6DSL 6DoF IMU.
