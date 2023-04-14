@@ -22,6 +22,7 @@ This is a P8X32A/Propeller, P2X8C4M64P/Propeller 2 driver object for the ST LSM6
 * Free-fall detection: set threshold, time
 * Auto-sleep/wake/(in)activity detection
 * FIFO functionality: empty, full, overrun, watermark flags, unread sample count, set decimation of data entries to FIFO, set mode, set data rate, set watermark level
+* Pedometer (step counter) embedded functionality support
 
 ## Requirements
 
@@ -40,11 +41,11 @@ P2/SPIN2:
 
 | Processor | Language | Compiler               | Backend     | Status                |
 |-----------|----------|------------------------|-------------|-----------------------|
-| P1        | SPIN1    | FlexSpin (5.9.14-beta) | Bytecode    | OK                    |
-| P1        | SPIN1    | FlexSpin (5.9.14-beta) | Native code | OK                    |
+| P1        | SPIN1    | FlexSpin (6.1.1-beta)  | Bytecode    | OK                    |
+| P1        | SPIN1    | FlexSpin (6.1.1-beta)  | Native code | OK                    |
 | P1        | SPIN1    | OpenSpin (1.00.81)     | Bytecode    | Untested (deprecated) |
-| P2        | SPIN2    | FlexSpin (5.9.14-beta) | NuCode      | FTBFS                 |
-| P2        | SPIN2    | FlexSpin (5.9.14-beta) | Native code | OK                    |
+| P2        | SPIN2    | FlexSpin (6.1.1-beta)  | NuCode      | FTBFS                 |
+| P2        | SPIN2    | FlexSpin (6.1.1-beta)  | Native code | OK                    |
 | P1        | SPIN1    | Brad's Spin Tool (any) | Bytecode    | Unsupported           |
 | P1, P2    | SPIN1, 2 | Propeller Tool (any)   | Bytecode    | Unsupported           |
 | P1, P2    | SPIN1, 2 | PNut (any)             | Bytecode    | Unsupported           |

@@ -203,7 +203,7 @@ PUB preset_active{}
     gyro_scale(250)
 
 PUB preset_click_det{}
-' Presets for click_-detection
+' Presets for click-detection
     reset{}
     accel_scale(2)
     accel_data_rate(416)
@@ -213,6 +213,16 @@ PUB preset_click_det{}
     click_latency(9)
     click_int_ena(TRUE)
     int1_mask(SNGTAP)
+
+PUB preset_pedometer{}
+' Presets for pedometer functionality
+    reset{}
+    blk_updt_ena{}
+    accel_data_rate(52)
+    accel_scale(2)
+    pedometer_ena(true)
+    pedometer_scale(2)
+    step_reset{}
 
 PUB accel_bias(x, y, z) | tmp
 ' Read accelerometer calibration offset values (on-chip)
@@ -861,10 +871,52 @@ PUB int1_mask(mask): curr_mask
             readreg(core#MD1_CFG, 1, @curr_mask)
             return
 
+PUB pedometer_ena(state): curr_state
+' Enable pedometer functionality
+'   Valid values:
+'       TRUE (-1 or 1), FALSE (0)
+' Any other value returns the current setting
+    curr_state := 0
+    readreg(core#CTRL10_C, 1, @curr_state)
+    case ||(state)
+        0, 1:
+            state := ((state & core#PED_EN_MASK) | (state & 1) | (1 << core#FUNC_EN))
+            writereg(core#CTRL10_C, 1, @state)
+        other:
+            return (((curr_state >> core#PED_EN) & 1) == 1)
+
+PUB pedometer_scale(scl): curr_scl
+' Sed pedometer full-scale
+'   Valid values:
+'       2, 4
+' Any other value returns the current setting
+    curr_scl := 0
+    readreg(core#CFG_PED_THRESH, 1, @curr_scl)
+    case scl
+        2, 4:
+            scl := lookdownz(scl: 2, 4)
+            scl := ((scl & core#PED_FS_MASK) | scl)
+            writereg(core#CFG_PED_THRESH, 1, @scl)
+        other:
+            return lookupz( ((curr_scl >> core#PED_FS) & 1): 2, 4 )
+
 PUB reset{} | tmp
 ' Reset the device
     tmp := core#RESET
     writereg(core#CTRL3_C, 1, @tmp)
+
+PUB step_count{}: c
+' Number of steps detected by pedometer function
+'   Returns: integer (u16)
+    c := 0
+    readreg(core#STP_CNTR_L, 2, @c)
+
+PUB step_reset{} | tmp
+' Reset the pedometer's step counter
+    tmp := 0
+    readreg(core#CTRL10_C, 1, @tmp)
+    tmp |= (1 << core#PED_RST_STP)
+    writereg(core#CTRL10_C, 1, @tmp)
 
 CON
 
