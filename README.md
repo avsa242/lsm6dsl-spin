@@ -45,7 +45,7 @@ P2/SPIN2:
 |-----------|----------|------------------------|--------------|-----------------------|
 | P1        | SPIN1    | FlexSpin (6.8.0)       | Bytecode     | OK                    |
 | P1        | SPIN1    | FlexSpin (6.8.0)       | Native/PASM  | OK                    |
-| P2        | SPIN2    | FlexSpin (6.8.0)       | NuCode       | OK                    |
+| P2        | SPIN2    | FlexSpin (6.8.0)       | NuCode       | Runtime issues        |
 | P2        | SPIN2    | FlexSpin (6.8.0)       | Native/PASM2 | OK                    |
 
 (other versions or toolchains not listed are __not supported__, and _may or may not_ work)
@@ -58,5 +58,5 @@ P2/SPIN2:
 
 ## Known issues
 
-* When `gyro_scale()` is set to 2000dps, it is possible for the measurements returned by `gyro_dps()` to overflow 32-bit signed integer max - this isn't protected
+* When `gyro_scale()` is set to 2000dps, it is technically possible (though unlikely in practice) for the measurements returned by `gyro_dps()` to overflow 32-bit signed integer max - this isn't protected against
 
