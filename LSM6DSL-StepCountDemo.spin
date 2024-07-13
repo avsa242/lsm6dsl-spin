@@ -13,8 +13,7 @@
 '#define LSM6DSL_SPI
 '#pragma exportdef(LSM6DSL_SPI)
 
-' Uncomment these lines (and the two above) to use an SPI-connected sensor
-'   (uses the cogless bytecode SPI engine)
+' Uncomment the two lines below to use the driver with a bytecode-based SPI engine
 '#define LSM6DSL_SPI_BC
 '#pragma exportdef(LSM6DSL_SPI_BC)
 

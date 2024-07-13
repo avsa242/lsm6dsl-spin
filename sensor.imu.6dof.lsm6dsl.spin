@@ -4,13 +4,21 @@
     Description:    Driver for the ST LSM6DSL 6DoF IMU
     Author:         Jesse Burt
     Started:        Feb 18, 2021
-    Updated:        Feb 16, 2024
+    Updated:        Jul 13, 2024
     Copyright (c) 2024 - See end of file for terms of use.
 ---------------------------------------------------------------------------------------------------
 }
 
 #include "sensor.accel.common.spinh"            ' pull in code common to all accelerometer
 #include "sensor.gyroscope.common.spinh"        '   and gyroscope drivers
+
+' if the bytecode-based SPI engine is requested, make sure SPI-related code in the driver
+'    is enabled
+#ifdef LSM6DSL_SPI_BC
+#   ifndef LSM6DSL_SPI
+#       define LSM6DSL_SPI
+#   endif
+#endif
 
 CON
 
