@@ -525,10 +525,13 @@ PUB fifo_accel_dec(factor): curr_factor
     factor := ((curr_factor & core.DEC_FIFO_XL_MASK) | factor)
     writereg(core.FIFO_CTRL3, factor)
 
-PUB fifo_data(ptr_data, nr_smp)
+PUB fifo_data(p_dest, nr_smp)
 ' Read FIFO data
-    if (lookdown(nr_smp: 1..FIFO_SAMPLES_MAX))
-        readreg(core.FIFO_DATA_OUT_L, (nr_smp * FIFO_UNIT), ptr_data)'xxx
+    if (lookdown(nr_smp: 5..FIFO_SAMPLES_MAX))
+        readreg(core.FIFO_DATA_OUT_L, p_dest, (nr_smp * FIFO_UNIT) )
+    elseif ( nr_smp =< 4 )
+        long[p_dest] := readreg(core.FIFO_DATA_OUT_L, (nr_smp * FIFO_UNIT) )
+
 
 PUB fifo_data_rate(rate): curr_rate
 ' Set FIFO output data rate, in Hz
@@ -700,7 +703,7 @@ PUB gyro_data_rate(rate): curr_rate
     curr_rate := readreg(core.CTRL2_G)
     case rate
         0, 12, 26, 52, 104, 208, 416, 833, 1660, 3330, 6660:
-            rate := lookdownz(rate: 0, 12, 26, 52, 104, 208, 416, 833, 1660,3330, 6660) ...
+            rate := lookdownz(rate: 0, 12, 26, 52, 104, 208, 416, 833, 1660, 3330, 6660) ...
                     << core.ODR_G
         other:
             curr_rate := (curr_rate >> core.ODR_G) & core.ODR_G_BITS
