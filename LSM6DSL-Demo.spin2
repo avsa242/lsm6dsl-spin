@@ -10,8 +10,8 @@
 }
 
 ' Uncomment these lines to use an SPI-connected sensor (default is I2C)
-'#define LSM6DSL_SPI
-'#pragma exportdef(LSM6DSL_SPI)
+#define LSM6DSL_SPI
+#pragma exportdef(LSM6DSL_SPI)
 
 #include "core.con.click.spin2"
 
@@ -22,7 +22,7 @@ CON
 
 
 ' -- User-modifiable constants
-    CLICK_BASE  = 0                             ' MikroE Click module base pin
+    CLICK_BASE  = 16                             ' MikroE Click module base pin
 ' --
 
 

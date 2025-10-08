@@ -4,8 +4,8 @@
     Description:    Driver for the ST LSM6DSL 6DoF IMU
     Author:         Jesse Burt
     Started:        Mar 6, 2021
-    Updated:        Feb 16, 2024
-    Copyright (c) 2024 - See end of file for terms of use.
+    Updated:        Oct 8, 2025
+    Copyright (c) 2025 - See end of file for terms of use.
 ---------------------------------------------------------------------------------------------------
 }
 
@@ -241,8 +241,7 @@ PUB preset_pedometer()
 
 PUB accel_bias(x, y, z) | tmp
 ' Read accelerometer calibration offset values (on-chip)
-    tmp := 0
-    readreg(core.X_OFS_USR, 3, @tmp)
+    tmp := readreg(core.X_OFS_USR, 3)
     { extend sign and copy to pointees }
     long[x] := (tmp.byte[X_AXIS] signx 7)
     long[y] := (tmp.byte[Y_AXIS] signx 7)
@@ -255,16 +254,15 @@ PUB accel_set_bias(x, y, z)
     x := -127 #> (x / _ares) <# 127
     y := -127 #> (y / _ares) <# 127
     z := -127 #> (z / _ares) <# 127
-    writereg(core.X_OFS_USR, 1, @x)
-    writereg(core.Y_OFS_USR, 1, @y)
-    writereg(core.Z_OFS_USR, 1, @z)
+    writereg(core.X_OFS_USR, x)
+    writereg(core.Y_OFS_USR, y)
+    writereg(core.Z_OFS_USR, z)
 
 PUB accel_bias_res(abiasres=-2): curr_res
 ' Set resolution of accelerometer bias/offset values, in micro-g's
 '   Valid values: 0_000977 (0.000977g), 0_015625 (0.015625g)
 '   Any other value polls the chip and returns the current setting
-    curr_res := 0
-    readreg(core.CTRL6_C, 1, @curr_res)
+    curr_res := readreg(core.CTRL6_C)
     case abiasres
         0_000977, 0_015625:
             abiasres := lookdownz(abiasres: 0_000977, 0_015625) << core.USR_OFF_W
@@ -273,7 +271,7 @@ PUB accel_bias_res(abiasres=-2): curr_res
             return lookupz(curr_res: 0_000977, 0_015625)
 
     abiasres := ((curr_res & core.USR_OFF_W_MASK) | abiasres)
-    writereg(core.CTRL6_C, 1, @abiasres)
+    writereg(core.CTRL6_C, abiasres)
 
 PUB accel_data(ptr_x, ptr_y, ptr_z) | tmp[2]
 ' Read the Accelerometer output registers
@@ -292,7 +290,7 @@ PUB accel_data_rate(rate=-2): curr_rate
 '       Normal mode: 0, 104, 208
 '       High-perf mode: *0, 12, 26, 52, 104, 208, 416, 833, 1660, 3330, 6660
 '   Any other value polls the chip and returns the current setting
-    readreg(core.CTRL1_XL, 1, @curr_rate)
+    curr_rate := readreg(core.CTRL1_XL)
     case rate
         0, 1, 12, 26, 52, 104, 208, 416, 833, 1660, 3330, 6660:
             rate := lookdownz(rate: 0, 12, 26, 52, 104, 208, 416, 833, 1660, 3330, 6660, 1) ...
@@ -302,12 +300,12 @@ PUB accel_data_rate(rate=-2): curr_rate
             return lookupz(curr_rate: 0, 12, 26, 52, 104, 208, 416, 833, 1660, 3330, 6660, 1)
 
     rate := ((curr_rate & core.ODR_XL_MASK) | rate)
-    writereg(core.CTRL1_XL, 1, @rate)
+    writereg(core.CTRL1_XL, rate)
 
 PUB accel_data_rdy(): flag
 ' Flag indicating new accelerometer data available
 '   Returns: TRUE (-1) if new data available, FALSE (0) otherwise
-    readreg(core.STATUS, 1, @flag)
+    flag := readreg(core.STATUS)
     return ((flag & core.XLRDY) == core.XLRDY)
 
 PUB accel_data_src(src=-2): curr_src
@@ -327,8 +325,7 @@ PUB accel_opmode(mode=-2): curr_mode
 '      *XL_HIPERF (0): High-performance mode
 '       XL_NORM (1): Normal mode
 '   Any other value polls the chip and returns the current setting
-    curr_mode := 0
-    readreg(core.CTRL6_C, 1, @curr_mode)
+    curr_mode := readreg(core.CTRL6_C)
     case mode
         XL_NORM, XL_HIPERF:
             mode <<= core.XL_HM_MODE
@@ -336,13 +333,13 @@ PUB accel_opmode(mode=-2): curr_mode
             curr_mode := (curr_mode >> core.XL_HM_MODE) & 1
 
     mode := ((curr_mode & core.XL_HM_MODE_MASK) | mode)
-    writereg(core.CTRL6_C, 1, @mode)
+    writereg(core.CTRL6_C, mode)
 
 PUB accel_scale(scale=-2): curr_scl
 ' Set the full-scale range of the accelerometer, in g's
 '   Valid values: *2, 4, 8, 16
 '   Any other value polls the chip and returns the current setting
-    readreg(core.CTRL1_XL, 1, @curr_scl)
+    curr_scl := readreg(core.CTRL1_XL)
     case scale
         2, 4, 8, 16:
             scale := lookdownz(scale: 2, 16, 4, 8)
@@ -352,7 +349,7 @@ PUB accel_scale(scale=-2): curr_scl
             curr_scl := ((curr_scl >> core.FS_XL) & core.FS_XL_BITS)
             return lookupz(curr_scl: 2, 16, 4, 8)
     scale := ((curr_scl & core.FS_XL_MASK) | scale)
-    writereg(core.CTRL1_XL, 1, @scale)
+    writereg(core.CTRL1_XL, scale)
 
 PUB accel_slp_pwr_mode(mode=-2): curr_mode
 ' Set accelerometer power mode/oversampling mode, when sleeping
@@ -362,8 +359,7 @@ PUB accel_slp_pwr_mode(mode=-2): curr_mode
 '       LOPWR_GSLEEP (2): Accel Low power, gyro sleeps
 '       LOPWR_GPWROFF (3): Accel Low power, gyro power off
 '   Any other value polls the chip and returns the current setting
-    curr_mode := 0
-    readreg(core.TAP_CFG, 1, @curr_mode)
+    curr_mode := readreg(core.TAP_CFG)
     case mode
         0..3:
             mode <<= core.INACT_EN
@@ -372,15 +368,14 @@ PUB accel_slp_pwr_mode(mode=-2): curr_mode
             return ((curr_mode >> core.INACT_EN) & core.INACT_EN_BITS)
 
     mode := ((curr_mode & core.INACT_EN_MASK) | mode)
-    writereg(core.TAP_CFG, 1, @mode)
+    writereg(core.TAP_CFG, mode)
 
 PUB click_axis_ena(mask=-2): curr_mask
 ' Enable click detection per axis
 '   Valid values:
 '       %000..%111 (%XYZ)
 '   Any other value polls the chip and returns the current setting
-    curr_mask := 0
-    readreg(core.TAP_CFG, 1, @curr_mask)
+    curr_mask := readreg(core.TAP_CFG)
     case mask
         %000..%111:
             mask <<= core.TAP_EN
@@ -388,7 +383,7 @@ PUB click_axis_ena(mask=-2): curr_mask
             return (curr_mask >> core.TAP_EN) & core.TAP_EN_BITS
 
     mask := ((curr_mask & core.TAP_EN_MASK) | mask)
-    writereg(core.TAP_CFG, 1, @mask)
+    writereg(core.TAP_CFG, mask)
 
 PUB clicked(): flag
 ' Flag indicating the sensor was single or double-clicked
@@ -405,13 +400,13 @@ PUB clicked_int(): intstat
 '       2: Click detected on X-axis
 '       1: Click detected on Y-axis
 '       0: Click detected on Z-axis
-    readreg(core.TAP_SRC, 1, @intstat)
+    return readreg(core.TAP_SRC)
 
 PUB click_int_ena(state=-2): curr_state
 ' Enable click interrupts on INT1
 '   Valid values: TRUE (-1 or 1), FALSE (0)
 '   Any other value polls the chip and returns the current setting
-    readreg(core.TAP_CFG, 1, @curr_state)
+    curr_state := readreg(core.TAP_CFG)
     case abs(state)
         0, 1:
             state := abs(state) << core.INTS_EN
@@ -419,7 +414,7 @@ PUB click_int_ena(state=-2): curr_state
             return ((curr_state >> core.INTS_EN) == 1)
 
     state := ((curr_state & core.INTS_EN_MASK) | state)
-    writereg(core.TAP_CFG, 1, @state)
+    writereg(core.TAP_CFG, state)
 
 PUB click_int_latch_ena(state=-2): curr_state
 ' Enable latching click-detection interrupts
@@ -427,8 +422,7 @@ PUB click_int_latch_ena(state=-2): curr_state
 '       TRUE (-1 or 1): Interrupt asserted until status is read
 '       FALSE (0): Interrupt asserted only for the event's duration
 '   Any other value polls the chip and returns the current setting
-    curr_state := 0
-    readreg(core.TAP_CFG, 1, @curr_state)
+    curr_state := readreg(core.TAP_CFG, 1, @curr_state)
     case abs(state)
         0, 1:
             state := abs(state)
@@ -436,15 +430,14 @@ PUB click_int_latch_ena(state=-2): curr_state
             return ((curr_state & 1) == 1)
 
     state := ((curr_state & core.LIR_MASK) | state)
-    writereg(core.TAP_CFG, 1, @state)
+    writereg(core.TAP_CFG, state)
 
 PUB click_latency(clat=-2): curr_clat
 ' Set minimum elapsed time between first recognized click and
 '   subsequent click, in usec
 '   Valid values: 4_800, 9_600, 19_200, 28_800
 '   Any other value polls the chip and returns the current setting
-    curr_clat := 0
-    readreg(core.INT_DUR2, 1, @curr_clat)
+    curr_clat := readreg(core.INT_DUR2)
     case clat
         4_800, 9_600, 19_200, 28_800:
             clat := lookdownz(clat: 4_800, 9_600, 19_200, 28_800) << core.QUIET
@@ -453,7 +446,7 @@ PUB click_latency(clat=-2): curr_clat
             return lookupz(curr_clat: 4_800, 9_600, 19_200, 28_800)
 
     clat := ((curr_clat & core.QUIET_MASK) | clat)
-    writereg(core.INT_DUR2, 1, @clat)
+    writereg(core.INT_DUR2, clat)
 
 PUB click_thresh(thresh=-2): curr_thr | ares
 ' Set threshold for recognizing a click, in microseconds
@@ -463,8 +456,7 @@ PUB click_thresh(thresh=-2): curr_thr | ares
 '       8g:     0..8_000_000    (step size: 0_250_000)
 '       16g:    0..16_000_000   (step size: 0_500_000)
     ares := (accel_scale(-2) * 1_000000) / 32    ' res. = scale / 32
-    curr_thr := 0
-    readreg(core.TAP_THS_6D, 1, @curr_thr)
+    curr_thr := readreg(core.TAP_THS_6D)
     case thresh
         0..(32*ares):
             thresh := (thresh / ares)
@@ -472,15 +464,14 @@ PUB click_thresh(thresh=-2): curr_thr | ares
             return (curr_thr * ares)
 
     thresh := ((curr_thr & core.TAP_THS_MASK) | thresh)
-    writereg(core.TAP_THS_6D, 1, @thresh)
+    writereg(core.TAP_THS_6D, thresh)
 
 PUB click_time(ctime=-2): curr_ctime
 ' Set maximum elapsed interval between start of click and end of click, in uSec
 '   Valid values: 9_600, 19_200, 38_400, 57_600
 '   Any other value polls the chip and returns the current setting
 '   NOTE: accel_data_rate() should be set to 416Hz or 833Hz, per ST AN5040
-    curr_ctime := 0
-    readreg(core.INT_DUR2, 1, @curr_ctime)
+    curr_ctime := readreg(core.INT_DUR2)
     case ctime
         9_600, 19_200, 38_400, 57_600:
             ctime := lookdownz(ctime: 9_600, 19_200, 38_400, 57_600)
@@ -489,12 +480,11 @@ PUB click_time(ctime=-2): curr_ctime
             return lookupz(curr_ctime: 9_600, 19_200, 38_400, 57_600)
 
     ctime := ((curr_ctime & core.SHOCK_MASK) | ctime)
-    writereg(core.INT_DUR2, 1, @ctime)
+    writereg(core.INT_DUR2, ctime)
 
 PUB dev_id(): id
 ' Read device identification
-    id := 0
-    readreg(core.WHO_AM_I, 1, @id)
+    return readreg(core.WHO_AM_I)
 
 PUB fifo_accel_dec(factor=-2): curr_factor
 ' Set decimation factor used to fill FIFO slots with accelerometer data
@@ -503,8 +493,7 @@ PUB fifo_accel_dec(factor=-2): curr_factor
 '       1: no decimation (every accel sample is used to fill FIFO)
 '       2, 3, 4, 8, 16, 32: every n'th accel sample is used to fill FIFO
 '   Any other value polls the chip and returns the current setting
-    curr_factor := 0
-    readreg(core.FIFO_CTRL3, 1, @curr_factor)
+    curr_factor := readreg(core.FIFO_CTRL3)
     case factor
         0, 1, 2, 3, 4, 8, 16, 32:
             factor := lookdownz(factor: 0, 1, 2, 3, 4, 8, 16, 32) << core.DEC_FIFO_XL
@@ -513,12 +502,12 @@ PUB fifo_accel_dec(factor=-2): curr_factor
             return lookupz(curr_factor: 0, 1, 2, 3, 4, 8, 16, 32)
 
     factor := ((curr_factor & core.DEC_FIFO_XL_MASK) | factor)
-    writereg(core.FIFO_CTRL3, 1, @factor)
+    writereg(core.FIFO_CTRL3, factor)
 
 PUB fifo_data(ptr_data, nr_smp)
 ' Read FIFO data
     if (lookdown(nr_smp: 1..FIFO_SAMPLES_MAX))
-        readreg(core.FIFO_DATA_OUT_L, (nr_smp * FIFO_UNIT), ptr_data)
+        readreg(core.FIFO_DATA_OUT_L, (nr_smp * FIFO_UNIT), ptr_data)'xxx
 
 PUB fifo_data_rate(rate=-2): curr_rate
 ' Set FIFO output data rate, in Hz
@@ -528,8 +517,7 @@ PUB fifo_data_rate(rate=-2): curr_rate
 '   NOTE: This setting will effectively be no higher than the sensor output
 '       data rate (e.g., if accel_data_rate() and/or gyro_data_rate() == 26,
 '       the FIFO data will update at the same rate, even if it is set to 52)
-    curr_rate := 0
-    readreg(core.FIFO_CTRL5, 1, @curr_rate)
+    curr_rate := readreg(core.FIFO_CTRL5)
     case rate
         0, 12, 26, 52, 104, 208, 416, 833, 1660, 3330, 6660:
             rate := lookdownz(rate: 0, 12, 26, 52, 104, 208, 416, 833, 1660, 3330, 6660) ...
@@ -539,20 +527,18 @@ PUB fifo_data_rate(rate=-2): curr_rate
             return lookupz(curr_rate: 0, 12, 26, 52, 104, 208, 416, 833, 1660, 3330, 6660)
 
     rate := ((curr_rate & core.ODR_FIFO_MASK) | rate)
-    writereg(core.FIFO_CTRL5, 1, @rate)
+    writereg(core.FIFO_CTRL5, rate)
 
 PUB fifo_empty(): flag
 ' Flag indicating FIFO is empty
 '   Returns: TRUE (-1): FIFO empty, or FALSE (0): not empty
-    flag := 0
-    readreg(core.FIFO_STATUS2, 1, @flag)
+    flag := readreg(core.FIFO_STATUS2)
     return ((flag & core.FIFOEMPTY) == core.FIFOEMPTY)
 
 PUB fifo_full(): flag
 ' Flag indicating FIFO full
 '   Returns: TRUE (-1): FIFO full, or FALSE (0): not full
-    flag := 0
-    readreg(core.FIFO_STATUS2, 1, @flag)
+    flag := readreg(core.FIFO_STATUS2)
     return ((flag & core.FIFOFULL) == core.FIFOFULL)
 
 PUB fifo_gyro_dec(factor=-2): curr_factor
@@ -562,8 +548,7 @@ PUB fifo_gyro_dec(factor=-2): curr_factor
 '       1: no decimation (every gyro sample used to fill FIFO)
 '       2, 3, 4, 8, 16, 32: every n'th gyro sample used to fill FIFO
 '   Any other value polls the chip and returns the current setting
-    curr_factor := 0
-    readreg(core.FIFO_CTRL3, 1, @curr_factor)
+    curr_factor := readreg(core.FIFO_CTRL3)
     case factor
         0, 1, 2, 3, 4, 8, 16, 32:
             factor := lookdownz(factor: 0, 1, 2, 3, 4, 8, 16, 32) << core.DEC_FIFO_G
@@ -572,7 +557,7 @@ PUB fifo_gyro_dec(factor=-2): curr_factor
             return lookupz(curr_factor: 0, 1, 2, 3, 4, 8, 16, 32)
 
     factor := ((curr_factor & core.DEC_FIFO_G_MASK) | factor)
-    writereg(core.FIFO_CTRL3, 1, @factor)
+    writereg(core.FIFO_CTRL3, factor)
 
 PUB fifo_mode(mode=-2): curr_mode
 ' Set FIFO mode
@@ -585,39 +570,35 @@ PUB fifo_mode(mode=-2): curr_mode
 '           CONT mode
 '       CONT (6): Continuously fill FIFO, overwriting the oldest samples first
 '   Any other value polls the chip and returns the current setting
-    curr_mode := 0
-    readreg(core.FIFO_CTRL5, 1, @curr_mode)
+    curr_mode := readreg(core.FIFO_CTRL5)
     case mode
         OFF, FIFO, CONT_TRIG, OFF_TRIG, CONT:
         other:
             return (curr_mode & core.FIFO_MODE_BITS)
 
     mode := ((curr_mode & core.FIFO_MODE_MASK) | mode)
-    writereg(core.FIFO_CTRL5, 1, @mode)
+    writereg(core.FIFO_CTRL5, mode)
 
 PUB fifo_overrun(): flag
 ' Flag indicating FIFO has overrun
 '   Returns: TRUE (-1): FIFO overrun, or FALSE (0): FIFO not overrun
-    flag := 0
-    readreg(core.FIFO_STATUS2, 1, @flag)
+    flag := readreg(core.FIFO_STATUS2)
     return ((flag & core.FIFOOVRRUN) == core.FIFOOVRRUN)
 
 PUB fifo_thresh(level=-2): curr_lvl
 ' Set FIFO watermark/threshold level, in words
-    curr_lvl := 0
-    readreg(core.FIFO_CTRL1, 2, @curr_lvl)
+    curr_lvl := readreg(core.FIFO_CTRL1, 2)
     case level
         0..FIFO_SAMPLES_MAX:
         other:
             return (curr_lvl & core.FTH_BITS)
 
     level := ((curr_lvl & core.FTH_MASK) | level)
-    writereg(core.FIFO_CTRL1, 2, @level)
+    writereg(core.FIFO_CTRL1, level, 2)
 
 PUB fifo_nr_unread(): nr_samples
 ' Number of unread samples stored in FIFO
-    nr_samples := 0
-    readreg(core.FIFO_STATUS1, 2, @nr_samples)
+    nr_samples := readreg(core.FIFO_STATUS1)
     return (nr_samples & core.DIFF_FIFO_BITS)
 
 PUB fifo_watermark(): flag
@@ -625,16 +606,14 @@ PUB fifo_watermark(): flag
 '   Returns:
 '       TRUE (-1): FIFO level at or above fifo_thresh()
 '       FALSE (0): FIFO level below fifo_thresh()
-    flag := 0
-    readreg(core.FIFO_STATUS2, 1, @flag)
+    flag := readreg(core.FIFO_STATUS2)
     return ((flag & core.FIFOWTRMRK) == core.FIFOWTRMRK)
 
 PUB freefall_thresh(thresh=-2): curr_thr
 ' Set free-fall threshold, in milli-g's
 '   Valid values: 156, 219, 250, 312, 344, 406, 469, 500
 '   Any other value polls the chip and returns the current setting
-    curr_thr := 0
-    readreg(core.FREE_FALL, 1, @curr_thr)
+    curr_thr := readreg(core.FREE_FALL)
     case thresh
         156, 219, 250, 312, 344, 406, 469, 500:
             thresh := lookdownz(thresh: 156, 219, 250, 312, 344, 406, 469, 500)
@@ -643,12 +622,11 @@ PUB freefall_thresh(thresh=-2): curr_thr
             return lookupz(curr_thr: 156, 219, 250, 312, 344, 406, 469, 500)
 
     thresh := ((curr_thr & core.FF_THS_MASK) | thresh)
-    writereg(core.FREE_FALL, 1, @thresh)
+    writereg(core.FREE_FALL, thresh)
 
 PUB freefall_time(fftime=-2): curr_time | ffdur_b4_0, ffdur_b5
 ' Set minimum time duration required to recognize free-fall
-    curr_time := 0
-    readreg(core.WAKEUP_DUR, 2, @curr_time)
+    curr_time := readreg(core.WAKEUP_DUR, 2)
     case fftime
         0..63:
             ' bit 5 of the FF_DUR field is in the MSB of the WAKEUP_DUR reg,
@@ -664,7 +642,7 @@ PUB freefall_time(fftime=-2): curr_time | ffdur_b4_0, ffdur_b5
             return (ffdur_b5 + ffdur_b4_0)
 
     fftime := ((curr_time & core.FF_DUR_MASK) | fftime)
-    writereg(core.WAKEUP_DUR, 2, @fftime)
+    writereg(core.WAKEUP_DUR, fftime, 2)
 
 PUB gyro_bias(x, y, z)
 ' Read gyroscope calibration offset values
@@ -698,8 +676,7 @@ PUB gyro_data_rate(rate=-2): curr_rate
 '       Normal: 0, 104, 208
 '       High-perf mode: *0, 12, 26, 52, 104, 208, 416, 833, 1660, 3330, 6660
 '   Any other value polls the chip and returns the current setting
-    curr_rate := 0
-    readreg(core.CTRL2_G, 1, @curr_rate)
+    curr_rate := readreg(core.CTRL2_G)
     case rate
         0, 12, 26, 52, 104, 208, 416, 833, 1660, 3330, 6660:
             rate := lookdownz(rate: 0, 12, 26, 52, 104, 208, 416, 833, 1660,3330, 6660) ...
@@ -709,12 +686,12 @@ PUB gyro_data_rate(rate=-2): curr_rate
             return lookupz(curr_rate: 0, 12, 26, 52, 104, 208, 416, 833, 1660, 3330, 6660)
 
     rate := ((curr_rate & core.ODR_G_MASK) | rate)
-    writereg(core.CTRL2_G, 1, @rate)
+    writereg(core.CTRL2_G, rate)
 
 PUB gyro_data_rdy(): flag
 ' Flag indicating new gyroscope data available
 '   Returns: TRUE (-1) if new data available, FALSE (0) otherwise
-    readreg(core.STATUS, 1, @flag)
+    flag := readreg(core.STATUS)
     return ((flag & core.GRDY) == core.GRDY)
 
 PUB gyro_data_src(src=-2): curr_src
@@ -737,8 +714,7 @@ PUB gyro_lpf_freq(freq=-2): curr_freq
 '       6600: 173, 237, *351, 937
 '       When set to other data rates, this setting has no effect
 '   Any other value polls the chip and returns the current setting
-    curr_freq := 0
-    readreg(core.CTRL6_C, 1, @curr_freq)
+    curr_freq := readreg(core.CTRL6_C)
     case gyro_data_rate(-2)
         833:
             case freq
@@ -772,7 +748,7 @@ PUB gyro_lpf_freq(freq=-2): curr_freq
             return
 
     freq := ((curr_freq & core.FTYPE_MASK) | freq)
-    writereg(core.CTRL6_C, 1, @freq)
+    writereg(core.CTRL6_C, freq)
 
 PUB gyro_opmode(mode=-2): curr_mode
 ' Set gyroscope operating mode
@@ -780,8 +756,7 @@ PUB gyro_opmode(mode=-2): curr_mode
 '      *NORM (0): Normal operation
 '       SLEEP (1): Sleep/low-power operation
 '   Any other value polls the chip and returns the current setting
-    curr_mode := 0
-    readreg(core.CTRL4_C, 1, @curr_mode)
+    curr_mode := readreg(core.CTRL4_C)
     case mode
         NORM, SLEEP:
             mode <<= core.SLP
@@ -789,14 +764,13 @@ PUB gyro_opmode(mode=-2): curr_mode
             return (curr_mode >> core.SLP) & 1
 
     mode := ((curr_mode & core.SLP_MASK) | mode)
-    writereg(core.CTRL4_C, 1, @mode)
+    writereg(core.CTRL4_C, mode)
 
 PUB gyro_scale(scale=-2): curr_scl
 ' Set gyroscope full-scale range, in degrees per second
 '   Valid values: 125, *250, 500, 1000, 2000
 '   Any other value polls the chip and returns the current setting
-    curr_scl := 0
-    readreg(core.CTRL2_G, 1, @curr_scl)
+    curr_scl := readreg(core.CTRL2_G)
     case scale
         125, 250, 500, 1000, 2000:
             ' 125dps scale is a separate reg field from the other scales,
@@ -809,7 +783,7 @@ PUB gyro_scale(scale=-2): curr_scl
             return lookupz(curr_scl: 250, 125, 500, 0, 1000, 0, 2000)
 
     scale := ((curr_scl & core.FS_G_MASK) | scale)
-    writereg(core.CTRL2_G, 1, @scale)
+    writereg(core.CTRL2_G, scale)
 
 PUB inact_thresh(thresh=-2): curr_thr | thr_res, thr_max
 ' Set inactivity threshold, in micro-g's
@@ -817,8 +791,7 @@ PUB inact_thresh(thresh=-2): curr_thr | thr_res, thr_max
 '   Any other value polls the chip and returns the current setting
     thr_res := ((accel_scale(-2) * 1_000_000) / 64)
     thr_max := (thr_res * core.WK_THS_MAX)
-    curr_thr := 0
-    readreg(core.WAKEUP_THS, 1, @curr_thr)
+    curr_thr := readreg(core.WAKEUP_THS)
     case thresh
         0..thr_max:
             thresh /= thr_res
@@ -826,7 +799,7 @@ PUB inact_thresh(thresh=-2): curr_thr | thr_res, thr_max
             return ((curr_thr & core.WK_THS_BITS) * thr_res)
 
     thresh := ((curr_thr & core.WK_THS_MASK) | thresh)
-    writereg(core.WAKEUP_THS, 1, @thresh)
+    writereg(core.WAKEUP_THS, thresh)
 
 PUB inact_time(itime=-2): curr_itime | time_res, dur_max
 ' Set inactivity time, in milliseconds
@@ -836,29 +809,26 @@ PUB inact_time(itime=-2): curr_itime | time_res, dur_max
 '       measures less than that set with inact_thresh()
     time_res := (512_000 / accel_data_rate(-2))
     dur_max := (time_res * core.SLP_DUR_MAX)
-    curr_itime := 0
-    readreg(core.WAKEUP_DUR, 1, @curr_itime)
+    curr_itime := readreg(core.WAKEUP_DUR)
     case itime
         0..dur_max:
             itime /= time_res
         other:
             return ((curr_itime & core.SLP_DUR_BITS) * time_res)
 
-    writereg(core.WAKEUP_DUR, 1, @itime)
+    writereg(core.WAKEUP_DUR, itime)
 
 PUB in_freefall(): flag
 ' Flag indicating device is in free-fall
 '   Returns:
 '       TRUE (-1): device is in free-fall
 '       FALSE (0): device isn't in free-fall
-    flag := 0
-    readreg(core.WAKEUP_SRC, 1, @flag)
+    flag := readreg(core.WAKEUP_SRC)
     return ((flag & core.FREEFALL) == core.FREEFALL)
 
 PUB int_inactivity(): flag
 ' Flag indicating inactivity interrupt asserted
-    flag := 0
-    readreg(core.WAKEUP_SRC, 1, @flag)
+    flag := readreg(core.WAKEUP_SRC)
     return (((flag >> core.SLPST_IA) & 1) == 1)
 
 PUB int1_mask(mask=-2): curr_mask
@@ -875,23 +845,20 @@ PUB int1_mask(mask=-2): curr_mask
 '       0 - Timer: counter ended
     case mask
         0..%11111111:
-            writereg(core.MD1_CFG, 1, @mask)
+            writereg(core.MD1_CFG, mask)
         other:
-            curr_mask := 0
-            readreg(core.MD1_CFG, 1, @curr_mask)
-            return
+            return readreg(core.MD1_CFG)
 
 PUB pedometer_ena(state): curr_state
 ' Enable pedometer functionality
 '   Valid values:
 '       TRUE (-1 or 1), FALSE (0)
 ' Any other value returns the current setting
-    curr_state := 0
-    readreg(core.CTRL10_C, 1, @curr_state)
+    curr_state := readreg(core.CTRL10_C)
     case abs(state)
         0, 1:
             state := ((state & core.PED_EN_MASK) | (state & 1) | (1 << core.FUNC_EN))
-            writereg(core.CTRL10_C, 1, @state)
+            writereg(core.CTRL10_C, state)
         other:
             return (((curr_state >> core.PED_EN) & 1) == 1)
 
@@ -900,33 +867,29 @@ PUB pedometer_scale(scale): curr_scl
 '   Valid values:
 '       2, 4
 ' Any other value returns the current setting
-    curr_scl := 0
-    readreg(core.CFG_PED_THRESH, 1, @curr_scl)
+    curr_scl := readreg(core.CFG_PED_THRESH)
     case scale
         2, 4:
             scale := lookdownz(scale: 2, 4)
             scale := ((scl & core.PED_FS_MASK) | scale)
-            writereg(core.CFG_PED_THRESH, 1, @scale)
+            writereg(core.CFG_PED_THRESH, scale)
         other:
             return lookupz( ((curr_scl >> core.PED_FS) & 1): 2, 4 )
 
-PUB reset() | tmp
+PUB reset()
 ' Reset the device
-    tmp := core.RESET
-    writereg(core.CTRL3_C, 1, @tmp)
+    writereg(core.CTRL3_C, core.RESET)
 
 PUB step_count(): c
 ' Number of steps detected by pedometer function
 '   Returns: integer (u16)
-    c := 0
-    readreg(core.STP_CNTR_L, 2, @c)
+    return readreg(core.STP_CNTR_L, 2)
 
 PUB step_reset() | tmp
 ' Reset the pedometer's step counter
-    tmp := 0
-    readreg(core.CTRL10_C, 1, @tmp)
+    tmp := readreg(core.CTRL10_C)
     tmp |= (1 << core.PED_RST_STP)
-    writereg(core.CTRL10_C, 1, @tmp)
+    writereg(core.CTRL10_C, tmp)
 
 CON
 
@@ -965,18 +928,17 @@ PRI blk_updt_ena() | tmp
 '   (wait until MSB and LSB registers are updated internally to update the
 '   values stored therein)
 
-    tmp := 0
-    readreg(core.CTRL3_C, 1, @tmp)
+    tmp := readreg(core.CTRL3_C)
 
     tmp |= (1 << core.BDU)
 
-    writereg(core.CTRL3_C, 1, @tmp)
+    writereg(core.CTRL3_C, tmp)
 
-PRI readreg(reg_nr, nr_bytes, ptr_buff) | cmd_pkt
+PRI readreg(reg_nr, len=1, p_dest=0): v | cmd_pkt, dest
 ' Read nr_bytes from the device into ptr_buff
     case reg_nr                                 ' validate register num
         core.OUT_TEMP_L..core.OUTZ_H_XL, core.OUT_MAG_RAW_X_L:
-
+            dest := p_dest
         core.FUNC_CFG_ACCESS, core.SENS_SYNC_TIMEFR..core.DRDY_PULSE_CFG_G, ...
         core.INT1_CTRL..core.STATUS, core.SENSHUB1..core.TIMESTAMP2, ...
         core.STP_TIMESTMP_L..core.WRIST_TILT_IA, ...
@@ -984,6 +946,7 @@ PRI readreg(reg_nr, nr_bytes, ptr_buff) | cmd_pkt
         core.SLV0_ADD..core.CFG_PED_THRESH, core.SM_THS..core.STEP_CNT_DELTA, ...
         core.MAG_SI_XX..core.MAG_OFFZ_H:
             bank_sel(reg_nr.byte[1])
+            dest := @v
         other:                                  ' invalid reg_nr
             return
 
@@ -994,18 +957,18 @@ PRI readreg(reg_nr, nr_bytes, ptr_buff) | cmd_pkt
     i2c.wrblock_lsbf(@cmd_pkt, 2)
     i2c.start()
     i2c.write(SLAVE_RD)
-    i2c.rdblock_lsbf(ptr_buff, nr_bytes, i2c.NAK)
+    i2c.rdblock_lsbf(dest, len, i2c.NAK)
     i2c.stop()
 #elseifdef LSM6DSL_SPI
     pinl(_CS)
     spi.wr_byte(reg_nr | core.READ)
 
     ' read LSByte to MSByte
-    spi.rdblock_lsbf(ptr_buff, nr_bytes)
+    spi.rdblock_lsbf(dest, len)
     pinh(_CS)
 #endif
 
-PRI writereg(reg_nr, nr_bytes, ptr_buff) | cmd_pkt
+PRI writereg(reg_nr, val, len=1) | cmd_pkt
 ' Write nr_bytes to the device from ptr_buff
     case reg_nr
         core.FUNC_CFG_ACCESS, core.SENS_SYNC_TIMEFR..core.DRDY_PULSE_CFG_G, core.INT1_CTRL, ...
@@ -1022,20 +985,20 @@ PRI writereg(reg_nr, nr_bytes, ptr_buff) | cmd_pkt
     cmd_pkt.byte[1] := reg_nr
     i2c.start()
     i2c.wrblock_lsbf(@cmd_pkt, 2)
-    i2c.wrblock_lsbf(ptr_buff, nr_bytes)
+    i2c.wrblock_lsbf(@val, len)
     i2c.stop()
 #elseifdef LSM6DSL_SPI
     pinl(_CS)
     spi.wr_byte(reg_nr)
 
     ' write LSByte to MSByte
-    spi.wrblock_lsbf(ptr_buff, nr_bytes)
+    spi.wrblock_lsbf(@val, len)
     pinh(_CS)
 #endif
 
 DAT
 {
-Copyright 2024 Jesse Burt
+Copyright 2025 Jesse Burt
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 associated documentation files (the "Software"), to deal in the Software without restriction,
