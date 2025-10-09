@@ -280,7 +280,7 @@ PUB accel_set_bias(x, y, z)
     writereg(core.Z_OFS_USR, z)
 
 
-PUB accel_bias_res(r): c
+PUB accel_bias_res(r=-2): c
 ' Set resolution of accelerometer bias/offset values, in micro-g's
 '   Valid values: 0_000977 (0.000977g), 0_015625 (0.015625g)
 '   Any other value polls the chip and returns the current setting
@@ -306,7 +306,7 @@ PUB accel_data(ptr_x, ptr_y, ptr_z) | tmp[2]
     long[ptr_z] := ~~tmp.word[Z_AXIS]
 
 
-PUB accel_data_rate(r): c
+PUB accel_data_rate(r=-2): c
 ' Set accelerometer output data rate, in Hz
 '   Valid values:
 '       Low power mode: 0, 1 (1.6), 12 (12.5), 26, 52
@@ -331,7 +331,7 @@ PUB accel_data_rdy(): f
     return ((f & core.XLRDY) == core.XLRDY)
 
 
-PUB accel_data_src(src): c
+PUB accel_data_src(src=-2): c
 ' Set source of data for accel_data() output
 '   Valid values:
 '      *ACCEL_LIVE (0): live/current data
@@ -343,7 +343,7 @@ PUB accel_data_src(src): c
         return _adata_src
 
 
-PUB accel_opmode(m): c
+PUB accel_opmode(m=-2): c
 ' Set accelerometer operating mode
 '   Valid values:
 '      *XL_HIPERF (0): High-performance mode
@@ -359,7 +359,7 @@ PUB accel_opmode(m): c
             c := (c >> core.XL_HM_MODE) & 1
 
 
-PUB accel_scale(s): c
+PUB accel_scale(s=-2): c
 ' Set the full-scale range of the accelerometer, in g's
 '   Valid values: *2, 4, 8, 16
 '   Any other value polls the chip and returns the current setting
@@ -376,7 +376,7 @@ PUB accel_scale(s): c
             return lookupz(c: 2, 16, 4, 8)
 
 
-PUB accel_slp_pwr_mode(m): c
+PUB accel_slp_pwr_mode(m=-2): c
 ' Set accelerometer power mode/oversampling mode, when sleeping
 '   Valid values:
 '       NORMAL (0): Normal
@@ -395,7 +395,7 @@ PUB accel_slp_pwr_mode(m): c
             return ((c >> core.INACT_EN) & core.INACT_EN_BITS)
 
 
-PUB click_axis_ena(m): c
+PUB click_axis_ena(m=-2): c
 ' Enable click detection per axis
 '   Valid values:
 '       %000..%111 (%XYZ)
@@ -429,37 +429,37 @@ PUB clicked_int(): i
     return readreg(core.TAP_SRC)
 
 
-PUB click_int_ena(s): c
+PUB click_int_ena(s=-2): c
 ' Enable click interrupts on INT1
 '   Valid values: TRUE (-1 or 1), FALSE (0)
 '   Any other value polls the chip and returns the current setting
     c := readreg(core.TAP_CFG)
-    case ||(s)
+    case abs(s)
         0, 1:
-            s := ||(s) << core.INTS_EN
+            s := abs(s) << core.INTS_EN
             s := ((c & core.INTS_EN_MASK) | s)
             writereg(core.TAP_CFG, s)
         other:
             return ((c >> core.INTS_EN) == 1)
 
 
-PUB click_int_latch_ena(s): c
+PUB click_int_latch_ena(s=-2): c
 ' Enable latching click-detection interrupts
 '   Valid values:
 '       TRUE (-1 or 1): Interrupt asserted until status is read
 '       FALSE (0): Interrupt asserted only for the event's duration
 '   Any other value polls the chip and returns the current setting
     c := readreg(core.TAP_CFG, 1, @c)
-    case ||(s)
+    case abs(s)
         0, 1:
-            s := ||(s)
+            s := abs(s)
             s := ((c & core.LIR_MASK) | s)
             writereg(core.TAP_CFG, s)
         other:
             return ((c & 1) == 1)
 
 
-PUB click_latency(l): c
+PUB click_latency(l=-2): c
 ' Set minimum elapsed time between first recognized click and
 '   subsequent click, in usec
 '   Valid values: 4_800, 9_600, 19_200, 28_800
@@ -475,7 +475,7 @@ PUB click_latency(l): c
             return lookupz(c: 4_800, 9_600, 19_200, 28_800)
 
 
-PUB click_thresh(t): c | ares
+PUB click_thresh(t=-2): c | ares
 ' Set threshold for recognizing a click, in microseconds
 '   Valid values are accel_scale()-dependent
 '       2g:     0..2_000_000    (step size: 0_062_500)
@@ -493,7 +493,7 @@ PUB click_thresh(t): c | ares
             return (c * ares)
 
 
-PUB click_time(t): c
+PUB click_time(t=-2): c
 ' Set maximum elapsed interval between start of click and end of click, in uSec
 '   Valid values: 9_600, 19_200, 38_400, 57_600
 '   Any other value polls the chip and returns the current setting
@@ -514,7 +514,7 @@ PUB dev_id(): id
     return readreg(core.WHO_AM_I)
 
 
-PUB fifo_accel_dec(f): c
+PUB fifo_accel_dec(f=-2): c
 ' Set decimation factor used to fill FIFO slots with accelerometer data
 '   Valid values:
 '       0: accel data is not used in FIFO
@@ -540,7 +540,7 @@ PUB fifo_data(p_dest, nr_smp)
         long[p_dest] := readreg(core.FIFO_DATA_OUT_L, (nr_smp * FIFO_UNIT) )
 
 
-PUB fifo_data_rate(r): c
+PUB fifo_data_rate(r=-2): c
 ' Set FIFO output data rate, in Hz
 '   Valid values:
 '       0, 12, 26, 52, 104, 208, 416, 833, 1660, 3330, 6660
@@ -574,7 +574,7 @@ PUB fifo_full(): f
     return ((f & core.FIFOFULL) == core.FIFOFULL)
 
 
-PUB fifo_gyro_dec(f): c
+PUB fifo_gyro_dec(f=-2): c
 ' Set decimation factor used to fill FIFO slots with gyroscope data
 '   Valid values:
 '       0: gyro data not used in FIFO
@@ -592,7 +592,7 @@ PUB fifo_gyro_dec(f): c
             return lookupz(c: 0, 1, 2, 3, 4, 8, 16, 32)
 
 
-PUB fifo_mode(m): c
+PUB fifo_mode(m=-2): c
 ' Set FIFO mode
 '   Valid values:
 '       OFF (0): FIFO disabled/bypassed
@@ -619,7 +619,7 @@ PUB fifo_overrun(): f
     return ((f & core.FIFOOVRRUN) == core.FIFOOVRRUN)
 
 
-PUB fifo_thresh(l): c
+PUB fifo_thresh(l=-2): c
 ' Set FIFO watermark/threshold level, in words
     c := readreg(core.FIFO_CTRL1, 2)
     case l
@@ -645,7 +645,7 @@ PUB fifo_watermark(): f
     return ((f & core.FIFOWTRMRK) == core.FIFOWTRMRK)
 
 
-PUB freefall_thresh(t): c
+PUB freefall_thresh(t=-2): c
 ' Set free-fall threshold, in milli-g's
 '   Valid values: 156, 219, 250, 312, 344, 406, 469, 500
 '   Any other value polls the chip and returns the current setting
@@ -660,7 +660,7 @@ PUB freefall_thresh(t): c
             return lookupz(c: 156, 219, 250, 312, 344, 406, 469, 500)
 
 
-PUB freefall_time(t): c | ffdur_b4_0, ffdur_b5
+PUB freefall_time(t=-2): c | ffdur_b4_0, ffdur_b5
 ' Set minimum time duration required to recognize free-fall
     c := readreg(core.WAKEUP_DUR, 2)
     case t
@@ -708,7 +708,7 @@ PUB gyro_data(ptr_x, ptr_y, ptr_z) | tmp[2]
     long[ptr_z] := ~~tmp.word[Z_AXIS] - _gbias[Z_AXIS]
 
 
-PUB gyro_data_rate(r): c
+PUB gyro_data_rate(r=-2): c
 ' Set gyroscope output data rate, in Hz
 '   Valid values:
 '       Low power mode: 0, 12 (12.5), 26, 52
@@ -733,7 +733,7 @@ PUB gyro_data_rdy(): f
     return ((f & core.GRDY) == core.GRDY)
 
 
-PUB gyro_data_src(src): c
+PUB gyro_data_src(src=-2): c
 ' Set source of data for gyro_data() output
 '   Valid values:
 '      *GYRO_LIVE (0): live/current data
@@ -745,7 +745,7 @@ PUB gyro_data_src(src): c
         return _gdata_src
 
 
-PUB gyro_lpf_freq(f): c
+PUB gyro_lpf_freq(f=-2): c
 ' Set gyroscope output data low-pass filter, in Hz
 '   Valid values dependent on gyro_data_rate() setting:
 '       833: 155, 195, *245, 293
@@ -791,7 +791,7 @@ PUB gyro_lpf_freq(f): c
     writereg(core.CTRL6_C, f)
 
 
-PUB gyro_opmode(m): c
+PUB gyro_opmode(m=-2): c
 ' Set gyroscope operating mode
 '   Valid values:
 '      *NORM (0): Normal operation
@@ -807,7 +807,7 @@ PUB gyro_opmode(m): c
             return (c >> core.SLP) & 1
 
 
-PUB gyro_scale(s): c
+PUB gyro_scale(s=-2): c
 ' Set gyroscope full-scale range, in degrees per second
 '   Valid values: 125, *250, 500, 1000, 2000
 '   Any other value polls the chip and returns the current setting
@@ -826,7 +826,7 @@ PUB gyro_scale(s): c
             return lookupz(c: 250, 125, 500, 0, 1000, 0, 2000)
 
 
-PUB inact_thresh(t): c | thr_res, thr_max
+PUB inact_thresh(t=-2): c | thr_res, thr_max
 ' Set inactivity threshold, in micro-g's
 '   Valid values: TBD
 '   Any other value polls the chip and returns the current setting
@@ -842,7 +842,7 @@ PUB inact_thresh(t): c | thr_res, thr_max
             return ((c & core.WK_THS_BITS) * thr_res)
 
 
-PUB inact_time(t): c | time_res, dur_max
+PUB inact_time(t=-2): c | time_res, dur_max
 ' Set inactivity time, in milliseconds
 '   Valid values:
 '   Any other value polls the chip and returns the current setting
@@ -874,7 +874,7 @@ PUB int_inactivity(): f
     return (((f >> core.SLPST_IA) & 1) == 1)
 
 
-PUB int1_mask(m): c
+PUB int1_mask(m=-2): c
 ' Set INT1 pin interrupt mask
 '   Valid values:
 '       Bit 7..0
@@ -893,13 +893,13 @@ PUB int1_mask(m): c
             return readreg(core.MD1_CFG)
 
 
-PUB pedometer_ena(s): c
+PUB pedometer_ena(s=-2): c
 ' Enable pedometer functionality
 '   Valid values:
 '       TRUE (-1 or 1), FALSE (0)
 ' Any other value returns the current setting
     c := readreg(core.CTRL10_C)
-    case ||(s)
+    case abs(s)
         0, 1:
             s := ((s & core.PED_EN_MASK) | (s & 1) | (1 << core.FUNC_EN))
             writereg(core.CTRL10_C, s)
@@ -907,7 +907,7 @@ PUB pedometer_ena(s): c
             return (((c >> core.PED_EN) & 1) == 1)
 
 
-PUB pedometer_scale(s): c
+PUB pedometer_scale(s=-2): c
 ' Set pedometer full-scale
 '   Valid values:
 '       2, 4

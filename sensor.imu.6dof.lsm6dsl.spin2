@@ -156,9 +156,9 @@ PUB startx(CS_PIN, SCK_PIN, MOSI_PIN, MISO_PIN, SCK_FREQ=1_000_000): status
 ' Start using custom IO pins
     if (lookdown(CS_PIN: 0..63) and lookdown(SCK_PIN: 0..63) and ...
         lookdown(MOSI_PIN: 0..63) and lookdown(MISO_PIN: 0..63) )
-        _CS := CS_PIN
         if ( status := spi.init(SCK_PIN, MOSI_PIN, MISO_PIN, core.SPI_MODE, SCK_FREQ) )
             waitus(core.T_POR)                  ' wait for device startup
+            _CS := CS_PIN
             _bank_sel := -1                     ' init bank select
             if (dev_id() == core.DEVID_RESP)    ' validate device
                 return
@@ -322,7 +322,7 @@ PUB accel_data_src(src=-2): c
         return _adata_src
 
 
-PUB accel_opmode(mode): c
+PUB accel_opmode(m=-2): c
 ' Set accelerometer operating mode
 '   Valid values:
 '      *XL_HIPERF (0): High-performance mode
@@ -493,7 +493,7 @@ PUB dev_id(): id
     return readreg(core.WHO_AM_I)
 
 
-PUB fifo_accel_dec(f): c
+PUB fifo_accel_dec(f=-2): c
 ' Set decimation factor used to fill FIFO slots with accelerometer data
 '   Valid values:
 '       0: accel data is not used in FIFO
@@ -872,7 +872,7 @@ PUB int1_mask(m=-2): c
             return readreg(core.MD1_CFG)
 
 
-PUB pedometer_ena(s): c
+PUB pedometer_ena(s=-2): c
 ' Enable pedometer functionality
 '   Valid values:
 '       TRUE (-1 or 1), FALSE (0)
@@ -886,7 +886,7 @@ PUB pedometer_ena(s): c
             return (((c >> core.PED_EN) & 1) == 1)
 
 
-PUB pedometer_scale(s): c
+PUB pedometer_scale(s=-2): c
 ' Set pedometer full-scale
 '   Valid values:
 '       2, 4
