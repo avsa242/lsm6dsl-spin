@@ -1,11 +1,12 @@
 {
 ---------------------------------------------------------------------------------------------------
     Filename:       LSM6DSL-StepCountDemo.spin2
-    Description:    Demo of the LSM6DSL driver: Pedometer step count output
+    Description:    Demo of the LSM6DSL driver
+        * Pedometer step count output
     Author:         Jesse Burt
     Started:        Apr 14, 2023
-    Updated:        Feb 17, 2024
-    Copyright (c) 2024 - See end of file for terms of use.
+    Updated:        Oct 10, 2025
+    Copyright (c) 2025 - See end of file for terms of use.
 ---------------------------------------------------------------------------------------------------
 }
 
@@ -17,31 +18,31 @@
 
 CON
 
-    _clkfreq    = cfg._clkfreq_def
-    _xtlfreq    = cfg._xtlfreq
+    _clkfreq    = 180_000_000
+    _xtlfreq    = 20_000_000
 
 
 ' -- User-modifiable constants
-    CLICK_BASE  = 0                             ' MikroE Click module base pin
+    CLICK_BASE  = 16                             ' MikroE Click module base pin
 ' --
 
 
 OBJ
 
-    cfg:    "boardcfg.p2eval"
     ser:    "com.serial.terminal.ansi" | SER_BAUD=2_000_000
 
 ' Uncomment these lines to use a MikroE Click module, and set the Click base pin above
     sensor: "sensor.imu.6dof.lsm6dsl" | {I2C} SCL=SCL_PIN, SDA=SDA_PIN, I2C_FREQ=400_000, ...
                                                 I2C_ADDR=0, ...
                                         {SPI} CS=CS_PIN, SCK=SCK_PIN, MOSI=MOSI_PIN, ...
-                                            MISO=MISO_PIN, SPI_FREQ=1_000_000
+                                            MISO=MISO_PIN
 
 ' Uncomment these lines instead to use all custom I/O settings
 '    sensor: "sensor.sensor.6dof.lsm6dsl" | {I2C} SCL=0, SDA=1, I2C_FREQ=400_000, I2C_ADDR=0, ...
-'                                           {SPI} CS=0, SCK=1, MOSI=2, MISO=3, SPI_FREQ=1_000_000
+'                                        {SPI} CS=0, SCK=1, MOSI=2, MISO=3, SPI_FREQ=1_000_000
 
-PUB setup()
+
+PUB main()
 
     ser.start()
     ser.clear()
@@ -68,7 +69,7 @@ PUB setup()
 
 DAT
 {
-Copyright 2024 Jesse Burt
+Copyright 2025 Jesse Burt
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 associated documentation files (the "Software"), to deal in the Software without restriction,

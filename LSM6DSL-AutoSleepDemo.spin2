@@ -1,11 +1,12 @@
 {
 ---------------------------------------------------------------------------------------------------
     Filename:       LSM6DSL-AutoSleepDemo.spin2
-    Description:    Demo of the LSM6DSL driver: Auto-sleep functionality
+    Description:    Demo of the LSM6DSL driver
+        * Auto-sleep functionality
     Author:         Jesse Burt
     Started:        Dec 27, 2021
-    Updated:        Feb 17, 2024
-    Copyright (c) 2024 - See end of file for terms of use.
+    Updated:        Oct 10, 2025
+    Copyright (c) 2025 - See end of file for terms of use.
 ---------------------------------------------------------------------------------------------------
 }
 
@@ -17,13 +18,13 @@
 
 CON
 
-    _clkfreq    = cfg._clkfreq_def
-    _xtlfreq    = cfg._xtlfreq
+    _clkfreq    = 180_000_000
+    _xtlfreq    = 20_000_000
 
 
 ' -- User-modifiable constants
-    LED1        = cfg.LED1                      ' LED used to indicate awake/sleep
-    CLICK_BASE  = 0                             ' MikroE Click module base pin
+    LED1        = 38                            ' LED used to indicate awake/sleep
+    CLICK_BASE  = 16                            ' MikroE Click module base pin
     'INT_PIN    = 0                             ' uncomment to define custom interrupt pin
                                                 '   (comment out the #include line above)
 ' --
@@ -31,7 +32,6 @@ CON
 
 OBJ
 
-    cfg:    "boardcfg.p2eval"
     ser:    "com.serial.terminal.ansi" | SER_BAUD=2_000_000
 
 ' Uncomment these lines to use a MikroE Click module, and set the Click base pin above
@@ -51,7 +51,7 @@ VAR
     long _intflag                               ' interrupt flag
 
 
-PUB main() | intsource, temp, sysmod
+PUB main() | intsource, temp, sysmod, a[3]
 
     setup()
     sensor.preset_active()                      ' default settings, but enable
@@ -79,7 +79,8 @@ PUB main() | intsource, temp, sysmod
     ' When the sensor goes to sleep, it should turn off.
     repeat
         ser.pos_xy(0, 3)
-        show_accel_data()                       ' show accel data
+        sensor.accel_g(@a[sensor.X_AXIS], @a[sensor.Y_AXIS], @a[sensor.Z_AXIS])
+        show_data(@"Accel  (g):  ", a[sensor.X_AXIS], a[sensor.Y_AXIS], a[sensor.Z_AXIS])
         intsource := sensor.int_inactivity()
         if ( _intflag )                         ' interrupt triggered
             intsource := sensor.int_inactivity()
@@ -87,7 +88,7 @@ PUB main() | intsource, temp, sysmod
                 pinl(LED1)
             else
                 pinh(LED1)
-        if (ser.getchar_noblock() == "c")       ' press the 'c' key in the demo
+        if ( ser.getchar_noblock() == "c" )     ' press the 'c' key in the demo
             cal_accel()                         ' to calibrate sensor offsets
 
 
@@ -99,6 +100,36 @@ PUB cog_isr()
         _intflag := 1                           '   set flag
         repeat until (pinr(INT_PIN) == 1)       ' now wait for it to clear
         _intflag := 0                           '   clear flag
+
+
+PUB cal_accel()
+' Calibrate the accelerometer
+    ser.pos_xy(0, 3)
+    ser.str(@"Calibrating accelerometer...")
+    sensor.calibrate_accel()
+    ser.pos_xy(0, 3)
+    ser.clear_ln()
+
+
+PUB show_data(p_str, x, y, z) | axis, tmp[3], sign
+
+    longmove(@tmp, @x, 3)
+
+    ser.str(p_str)
+    repeat axis from 0 to 2
+        ' The sign is normally taken from the whole part and just displayed.
+        ' Because we're showing values divided by 1_000_000, it won't show negative until the value
+        '   reaches -1_000_000 or less, so values like -0_800_000 will display without the '-',
+        '   so process the sign display separately here
+        if ( tmp[axis] < 0 )
+            sign := "-"
+        else
+            sign := " "
+        ser.printf(@"%c%d.%06.6d     ", sign, ...
+                                        abs(tmp[axis] / 1_000_000), ...
+                                        abs(tmp[axis] // 1_000_000) )
+    ser.newline()
+
 
 PUB setup()
 
@@ -115,11 +146,9 @@ PUB setup()
     cogspin(NEWCOG, cog_isr(), @_isr_stack)     ' start ISR in another core
 
 
-#include "acceldemo.common.spin2h"              ' pull in code common to all accelerometer demos
-
 DAT
 {
-Copyright 2024 Jesse Burt
+Copyright 2025 Jesse Burt
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 associated documentation files (the "Software"), to deal in the Software without restriction,

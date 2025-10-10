@@ -1,11 +1,12 @@
 {
 ---------------------------------------------------------------------------------------------------
     Filename:       LSM6DSL-AutoSleepDemo.spin
-    Description:    LSM6DSL driver demo (Auto-sleep functionality)
+    Description:    LSM6DSL driver demo
+        * Auto-sleep functionality
     Author:         Jesse Burt
     Started:        Dec 27, 2021
-    Updated:        Feb 17, 2024
-    Copyright (c) 2024 - See end of file for terms of use.
+    Updated:        Oct 10, 2025
+    Copyright (c) 2025 - See end of file for terms of use.
 ---------------------------------------------------------------------------------------------------
 }
 
@@ -20,23 +21,22 @@
 
 CON
 
-    _clkmode    = cfg._clkmode
-    _xinfreq    = cfg._xinfreq
+    _clkmode    = xtal1+pll16x
+    _xinfreq    = 5_000_000
 
 
 ' -- User-modifiable constants
     INT_PIN     = 24                            ' LSM6DSL INT_PIN pin
-    LED1        = cfg.LED1                      ' LED used to indicate awake/sleep
+    LED1        = 26                            ' LED used to indicate awake/sleep
 ' --
 
 
 OBJ
 
-    cfg:    "boardcfg.flip"
-    time:   "time"
     ser:    "com.serial.terminal.ansi" | SER_BAUD=115_200
     sensor: "sensor.imu.6dof.lsm6dsl" | {I2C} SCL=28, SDA=29, I2C_FREQ=400_000, I2C_ADDR=0, ...
                                         {SPI} CS=0, SCK=1, MOSI=2, MISO=3
+    time:   "time"
 
 
 VAR
@@ -44,7 +44,8 @@ VAR
     long _isr_stack[50]                         ' stack for ISR core
     long _intflag                               ' interrupt flag
 
-PUB main() | intsource, temp, sysmod
+
+PUB main() | intsource, temp, sysmod, a[3]
 
     setup()
     sensor.preset_active()                      ' default settings, but enable
@@ -72,7 +73,8 @@ PUB main() | intsource, temp, sysmod
     ' When the sensor goes to sleep, it should turn off.
     repeat
         ser.pos_xy(0, 3)
-        show_accel_data()                       ' show accel data
+        sensor.accel_g(@a[sensor.X_AXIS], @a[sensor.Y_AXIS], @a[sensor.Z_AXIS])
+        show_data(@"Accel  (g):  ", a[sensor.X_AXIS], a[sensor.Y_AXIS], a[sensor.Z_AXIS])
         intsource := sensor.int_inactivity()
         if ( _intflag )                         ' interrupt triggered
             intsource := sensor.int_inactivity()
@@ -80,7 +82,7 @@ PUB main() | intsource, temp, sysmod
                 outa[LED1] := 0
             else
                 outa[LED1] := 1
-        if ( ser.getchar_noblock() == "c")      ' press the 'c' key in the demo
+        if ( ser.getchar_noblock() == "c" )     ' press the 'c' key in the demo
             cal_accel()                         ' to calibrate sensor offsets
 
 
@@ -92,6 +94,35 @@ PUB cog_isr() | pin
         _intflag := 1                           '   set flag
         waitpeq(|< INT_PIN, |< INT_PIN, 0)      ' now wait for it to clear
         _intflag := 0                           '   clear flag
+
+
+PUB cal_accel()
+' Calibrate the accelerometer
+    ser.pos_xy(0, 3)
+    ser.str(@"Calibrating accelerometer...")
+    sensor.calibrate_accel()
+    ser.pos_xy(0, 3)
+    ser.clear_ln()
+
+
+PUB show_data(p_str, x, y, z) | axis, tmp[3], sign
+
+    longmove(@tmp, @x, 3)
+
+    ser.str(p_str)
+    repeat axis from 0 to 2
+        ' The sign is normally taken from the whole part and just displayed.
+        ' Because we're showing values divided by 1_000_000, it won't show negative until the value
+        '   reaches -1_000_000 or less, so values like -0_800_000 will display without the '-',
+        '   so process the sign display separately here
+        if ( tmp[axis] < 0 )
+            sign := "-"
+        else
+            sign := " "
+        ser.printf(@"%c%d.%06.6d     ", sign, ...
+                                        abs(tmp[axis] / 1_000_000), ...
+                                        abs(tmp[axis] // 1_000_000) )
+    ser.newline()
 
 
 PUB setup()
@@ -110,12 +141,11 @@ PUB setup()
     cognew(cog_isr(), @_isr_stack)              ' start ISR in another core
 
 
-#include "acceldemo.common.spinh"               ' pull in code common to all accelerometer demos
 
 
 DAT
 {
-Copyright 2024 Jesse Burt
+Copyright 2025 Jesse Burt
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 associated documentation files (the "Software"), to deal in the Software without restriction,

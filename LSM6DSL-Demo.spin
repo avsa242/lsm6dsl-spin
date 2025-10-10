@@ -1,10 +1,11 @@
 {
 ---------------------------------------------------------------------------------------------------
     Filename:       LSM6DSL-Demo.spin
-    Description:    LSM6DSL driver demo (6DoF data output)
+    Description:    Demo of the LSM6DSL driver
+        * 6DoF data output
     Author:         Jesse Burt
     Started:        Feb 19, 2021
-    Updated:        Oct 8, 2025
+    Updated:        Oct 10, 2025
     Copyright (c) 2025 - See end of file for terms of use.
 ---------------------------------------------------------------------------------------------------
 }
@@ -20,17 +21,16 @@
 
 CON
 
-    _clkmode    = cfg._clkmode
-    _xinfreq    = cfg._xinfreq
+    _clkmode    = xtal1+pll16x
+    _xinfreq    = 5_000_000
 
 
 OBJ
 
-    cfg:    "boardcfg.flip"
-    time:   "time"
     ser:    "com.serial.terminal.ansi" | SER_BAUD=115_200
     sensor: "sensor.imu.6dof.lsm6dsl" | {I2C} SCL=28, SDA=29, I2C_FREQ=400_000, I2C_ADDR=0, ...
                                         {SPI} CS=0, SCK=1, MOSI=2, MISO=3
+    time:   "time"
 
 
 PUB main() | a[3], g[3]
@@ -48,7 +48,7 @@ PUB main() | a[3], g[3]
         repeat
         until sensor.gyro_data_rdy()             ' wait for new mag data
 
-        ' copy magnetometer data (micro-Gauss) to an array here
+        ' copy gyroscope data (micro-degrees per second) to an array here
         sensor.gyro_dps(@g[sensor.X_AXIS], @g[sensor.Y_AXIS], @g[sensor.Z_AXIS])
 
         ser.pos_xy(0, 3)
@@ -58,6 +58,7 @@ PUB main() | a[3], g[3]
         if ( ser.getchar_noblock() == "c" )     ' press "c" to calibrate/zero the sensors
             cal_accel()
             cal_gyro()
+
 
 PUB show_data(p_str, x, y, z) | axis, tmp[3], sign
 
@@ -74,8 +75,8 @@ PUB show_data(p_str, x, y, z) | axis, tmp[3], sign
         else
             sign := " "
         ser.printf(@"%c%d.%06.6d     ", sign, ...
-                                        ||(tmp[axis] / 1_000_000), ...
-                                        ||(tmp[axis] // 1_000_000) )
+                                        abs(tmp[axis] / 1_000_000), ...
+                                        abs(tmp[axis] // 1_000_000) )
     ser.newline()
 
 
