@@ -4,8 +4,8 @@
     Description:    Driver for the ST LSM6DSL 6DoF IMU
     Author:         Jesse Burt
     Started:        Feb 18, 2021
-    Updated:        Oct 9, 2025
-    Copyright (c) 2025 - See end of file for terms of use.
+    Updated:        Aug 7, 2026
+    Copyright (c) 2026 - See end of file for terms of use.
 ---------------------------------------------------------------------------------------------------
 }
 
@@ -217,7 +217,7 @@ PUB preset_freefall()
     accel_scale(2)
     gyro_data_rate(52)
     gyro_scale(250)
-    freefall_time(6)
+    freefall_set_time(6)
     freefall_thresh(312)
     click_int_ena(TRUE)
 
@@ -645,6 +645,23 @@ PUB fifo_watermark(): f
     return ((f & core.FIFOWTRMRK) == core.FIFOWTRMRK)
 
 
+PUB freefall_set_time(t) | tmp, ffdur_b4_0, ffdur_b5
+' Set minimum time duration required to recognize free-fall
+'   t:  0..63
+'   other values ignored
+    if ( (t >= 0) and (t <= 63) )
+        ' bit 5 of the FF_DUR field is in the MSB of the WAKEUP_DUR reg,
+        '   but the bottom five bits are the MSBits in the next reg
+        ' they aren't situated such that they can simply be isolated (&),
+        '   so isolate each part separately and combine them when writing
+        tmp := readreg(core.WAKEUP_DUR, 2)
+        ffdur_b5 := ((t >> 5) & 1) << 7
+        ffdur_b4_0 := (t & %11111) << 11
+        t := (ffdur_b5 | ffdur_b4_0)
+        t := ( (tmp & core.FF_DUR_MASK) | t)
+        writereg(core.WAKEUP_DUR, t, 2)
+
+
 PUB freefall_thresh(t=-2): c
 ' Set free-fall threshold, in milli-g's
 '   Valid values: 156, 219, 250, 312, 344, 406, 469, 500
@@ -660,24 +677,12 @@ PUB freefall_thresh(t=-2): c
             return lookupz(c: 156, 219, 250, 312, 344, 406, 469, 500)
 
 
-PUB freefall_time(t=-2): c | ffdur_b4_0, ffdur_b5
-' Set minimum time duration required to recognize free-fall
-    c := readreg(core.WAKEUP_DUR, 2)
-    case t
-        0..63:
-            ' bit 5 of the FF_DUR field is in the MSB of the WAKEUP_DUR reg,
-            '   but the bottom five bits are the MSBits in the next reg
-            ' they aren't situated such that they can simply be isolated (&),
-            '   so isolate each part separately and combine them when writing
-            ffdur_b5 := ((t >> 5) & 1) << 7
-            ffdur_b4_0 := (t & %11111) << 11
-            t := (ffdur_b5 | ffdur_b4_0)
-            t := ((c & core.FF_DUR_MASK) | t)
-            writereg(core.WAKEUP_DUR, t, 2)
-        other:
-            ffdur_b5 := ((c >> 7) & 1) << 5
-            ffdur_b4_0 := ((c >> 11) & %11111)
-            return (ffdur_b5 + ffdur_b4_0)
+PUB freefall_time(): t | tmp, ffdur_b4_0, ffdur_b5
+' Get currently set minimum time duration required to recognize free-fall
+    tmp := readreg(core.WAKEUP_DUR, 2)
+    ffdur_b5 := ( (tmp >> 7) & 1) << 5
+    ffdur_b4_0 := ( (tmp >> 11) & %11111)
+    return (ffdur_b5 + ffdur_b4_0)
 
 
 PUB gyro_bias(x, y, z)
@@ -1050,7 +1055,7 @@ PRI writereg(reg_nr, val, len=1) | cmd_pkt
 
 DAT
 {
-Copyright 2025 Jesse Burt
+Copyright 2026 Jesse Burt
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 associated documentation files (the "Software"), to deal in the Software without restriction,

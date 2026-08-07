@@ -5,8 +5,8 @@
         * Free-fall detection functionality
     Author:         Jesse Burt
     Started:        Sep 6, 2021
-    Updated:        Oct 10, 2025
-    Copyright (c) 2025 - See end of file for terms of use.
+    Updated:        Aug 7, 2026
+    Copyright (c) 2026 - See end of file for terms of use.
 ---------------------------------------------------------------------------------------------------
 }
 
@@ -77,7 +77,7 @@ PUB setup()
     ser.strln(@"Serial terminal started")
 
     if ( sensor.start() )
-        ser.strln(@"LSM6DSL driver started (SPI)")
+        ser.strln(@"LSM6DSL driver started")
     else
         ser.strln(@"LSM6DSL driver failed to start - halting")
         repeat
@@ -85,7 +85,7 @@ PUB setup()
 
 DAT
 {
-Copyright 2025 Jesse Burt
+Copyright 2026 Jesse Burt
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 associated documentation files (the "Software"), to deal in the Software without restriction,
